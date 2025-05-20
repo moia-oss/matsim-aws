@@ -15,3 +15,17 @@ buildNumber.properties
 .project
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
+
+/matsim-aws-setup/.classpath.txt
+/matsim-aws-setup/target
+/matsim-aws-setup/.classpath
+/matsim-aws-setup/.project
+/matsim-aws-setup/.idea
+/matsim-aws-setup/.settings
+/matsim-aws-setup/.vscode
+/matsim-aws-setup/*.iml
+
+# CDK asset staging directory
+/matsim-aws-setup/.cdk.staging
+/matsim-aws-setup/cdk.out
+/output/
