@@ -1,4 +1,8 @@
-BUCKET_NAME="s3://matsim-jobs-input-xxxxxxxxxxxx"
+set -o allexport
+source ./environment.env
+set +o allexport
+
+BUCKET_NAME="s3://matsim-jobs-input-${AWS_ACCOUNT}"
 
 cd matsim-aws-setup
 mvn clean package -DskipTests=true

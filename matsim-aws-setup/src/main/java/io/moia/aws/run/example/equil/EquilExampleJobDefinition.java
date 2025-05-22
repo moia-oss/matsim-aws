@@ -12,8 +12,8 @@ import java.util.List;
 
 public class EquilExampleJobDefinition {
 
-    private final static String account = "xxxxxxxxxxxx";
-    private final static String region = "eu-central-1";
+    private final static String account = System.getenv("AWS_ACCOUNT");
+    private final static String region = System.getenv("REGION");
 
     public static final String IMAGE = account + ".dkr.ecr." + region + ".amazonaws.com/matsim-jobs-repo:matsim-v0.0.1";
     public final static String JOB_DEFINITION_NAME = "example-equil";

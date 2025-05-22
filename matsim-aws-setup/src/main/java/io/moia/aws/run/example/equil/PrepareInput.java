@@ -7,11 +7,11 @@ import java.nio.file.Path;
 
 public class PrepareInput {
 
-    private final static String bucket = S3Stack.inputBucketName("xxxxxxxxxxxx");
-    public static final String SCENARIO = "examples/equil";
+    static final String SCENARIO = "examples/equil";
+
+    private final static String bucket = S3Stack.inputBucketName(System.getenv("AWS_ACCOUNT"));
 
     public static void main(String[] args) {
-
 
         Path config = Path.of("./scenarios/equil/config.xml");
         BatchJobUtils.uploadFileToS3(bucket, SCENARIO + "/config.xml", config);
