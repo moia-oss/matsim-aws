@@ -24,17 +24,27 @@ and channel
 - a packaged executable jar (i.e., shaded via maven)
 
 # Steps
+
+## Setup Environment
+Fill in the environment variables in the `environment.env` 
+file. You will need at least the AWS account number and your
+desired region. This environment will act as a single source 
+of truth throughout the setup.
+
+## Set your AWS credentials in the System environment
+Make sure that your credentials are available as environment variables.
+
 ## Deploy AWS App
 
-Go to the `matsim-aws-setup` maven module.
-Execute maven `compile` goal.
-Run:
+Run the `1_deployAWSInfrastructure.sh` script. This will
+- go to the `matsim-aws-setup` maven module.
+- execute maven `compile` goal.
+- Run:
+  - `cdk bootstrap`
+  - `cdk deploy --all`
 
-`cdk boostrap`
-
-`cdk deploy --all`
-
-Check if there is a `cdk.out` folder under `matsim-aws-setup`
+  
+Afterwards, check if there is a `cdk.out` folder under `matsim-aws-setup`
 
 ## Build image and push to ECR
 Use `deployMatsimImage.sh` for building and pushing the job image once 
@@ -46,19 +56,19 @@ The `scenarios` folder contains the `equil` example scenario from MATSim origina
 Within the `matsim-aws-setup` module, there is the `io.moia.aws.run` package that shows
 how to get your first simulation running.
 
-First, (with correct AWS credentials in your environment) run the `PrepareInput` class,
-which simply uploads the required scenario files to your newly created S3 input bucket.
-Make sure to set your account in the `bucket` variable in the header of the class.
+First, (with correct AWS credentials and the environment.env variables in your environment) 
+run the `PrepareInput` class, which simply uploads the required scenario files to your newly
+created S3 input bucket.
 
 Next, you need to package the maven module into an executable jar, such that it contains the `RunEquil`
 main class. You can use the `updateJar.sh` script provided here to run the package command and
 update the resulting jar into the correct input bucket path.
 
-Once the input and jar are uploaded you need to define a AWS batch job definition. The job definition
-acts like a template for defining how a job should be run.
+Once the input and jar are uploaded you need to define a AWS batch job definition. 
+The job definition acts like a template for defining how a job should be run.
 The definition defines various parameters, such as the batch job queue, the input/output buckets,
-Main class, etc. Run the `EquilExampleJobDefinition` (with correct AWS credentials set and account name
-set in the header of the class) to register the definition in your account.
+Main class, etc. Run the `EquilExampleJobDefinition` (again with correct environment variables)
+to register the definition in your account.
 
 Now you can run the `EquilExampleJobSubmission`class to actually submit your job. A link to the
 AWS batch job will be printed to the console. The output will be synced to your output bucket.
