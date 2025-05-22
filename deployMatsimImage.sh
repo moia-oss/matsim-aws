@@ -1,10 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
+set -o allexport
+source ./environment.env
+set +o allexport
+
 TAG_NAME="matsim-v0.0.1"
-ACCOUNT_NAME="xxxxxxxxxxxx"
-REGION="eu-central-1"
-REPO="${ACCOUNT_NAME}.dkr.ecr.${REGION}.amazonaws.com/matsim-jobs-repo"
+REPO="${AWS_ACCOUNT}.dkr.ecr.${REGION}.amazonaws.com/matsim-jobs-repo"
 
 # Build the image
 podman build ./docker-build -t ${REPO}:${TAG_NAME} --platform linux/arm64

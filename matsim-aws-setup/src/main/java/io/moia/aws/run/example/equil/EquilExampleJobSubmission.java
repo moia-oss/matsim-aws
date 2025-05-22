@@ -7,8 +7,7 @@ import java.util.List;
 
 public class EquilExampleJobSubmission {
 
-    private final static Region REGION = Region.EU_CENTRAL_1;
-
+    private final static Region REGION = Region.of(System.getenv("REGION"));
 
     public static void main(String[] args) {
 

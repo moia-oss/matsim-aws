@@ -8,13 +8,11 @@ import software.amazon.awscdk.services.s3.IBucket;
 
 public class Run {
 
-    public static final Environment ENV = makeEnv("xxxxxxxxxxxx", "eu-central-1");
+    private static final Environment ENV = makeEnv(System.getenv("AWS_ACCOUNT"), System.getenv("REGION"));
 
-    public static final boolean DEPLOY_SLACK_LAMBDA = false;
-    // put in your slack hook url
-    public static final String SLACK_HOOK_URL = "https://hooks.slack.com/services/.....";
-    // change to your slack channel name
-    public static final String SLACK_CHANNEL_NAME = "general";
+    private static final boolean DEPLOY_SLACK_LAMBDA = Boolean.parseBoolean(System.getenv("DEPLOY_SLACK_LAMBDA"));
+    private static final String SLACK_HOOK_URL = System.getenv("SLACK_HOOK_URL");
+    private static final String SLACK_CHANNEL_NAME = System.getenv("SLACK_CHANNEL_NAME");
 
     // Helper method to build an environment
     static Environment makeEnv(String account, String region) {
@@ -46,7 +44,9 @@ public class Run {
         new IAMStack(app, "IAMStack", stackProps, inputBucket, outputBucket);
         new ECRStack(app, "ECRStack", stackProps);
         new BatchStack(app, "BatchStack", stackProps, vpcStack.getVpc());
-        new JobNotificationLambdaStack(app, "JobNotificationStack", stackProps, SLACK_HOOK_URL, SLACK_CHANNEL_NAME);
+        if(DEPLOY_SLACK_LAMBDA) {
+            new JobNotificationLambdaStack(app, "JobNotificationStack", stackProps, SLACK_HOOK_URL, SLACK_CHANNEL_NAME);
+        }
         app.synth();
     }
 }
