@@ -47,7 +47,7 @@ Run the `1_deployAWSInfrastructure.sh` script. This will
 Afterwards, check if there is a `cdk.out` folder under `matsim-aws-setup`
 
 ## Build image and push to ECR
-Use `deployMatsimImage.sh` for building and pushing the job image once 
+Use `2_deployMatsimImage.sh` for building and pushing the job image once 
 the ECR repository has been setup.
 
 ## Run Example
@@ -61,7 +61,7 @@ run the `PrepareInput` class, which simply uploads the required scenario files t
 created S3 input bucket.
 
 Next, you need to package the maven module into an executable jar, such that it contains the `RunEquil`
-main class. You can use the `updateJar.sh` script provided here to run the package command and
+main class. You can use the `3_updateJar.sh` script provided here to run the package command and
 update the resulting jar into the correct input bucket path.
 
 Once the input and jar are uploaded you need to define a AWS batch job definition. 
