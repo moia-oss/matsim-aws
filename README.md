@@ -34,6 +34,12 @@ of truth throughout the setup.
 ## Set your AWS credentials in the System environment
 Make sure that your credentials are available as environment variables.
 
+As an alternative, if your organization supports it, use AWS SSO as described [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html).
+Be careful, the region of the SSO might be different from the region of your target account!
+You can see the parameters you need after logging in, by selecting the "Access Keys" link next to your account.
+
+Use `aws sso login --profile my-profile` before running the deploy script.
+
 ## Deploy AWS App
 
 Run the `1_deployAWSInfrastructure.sh` script. This will
