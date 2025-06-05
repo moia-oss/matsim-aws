@@ -85,7 +85,8 @@ if [ -z ${AWS_BATCH_JOB_ARRAY_INDEX+x} ]; then
       -Djava.io.tmpdir="${MATSIM_TMPDIR}" \
       -Djava.library.path=/usr/lib/${ARCH}-${OS}-gnu/jni \
       ${MAIN_CLASS} \
-      --output "${OUTPUT_DIR}" "$@"
+      #--output "${OUTPUT_DIR}" "$@"
+      "$@"
 else
     echo "Batch Array job"
     java -XX:+UseParallelGC \
@@ -94,7 +95,8 @@ else
       -Djava.io.tmpdir="${MATSIM_TMPDIR}" \
       -Djava.library.path=/usr/lib/${ARCH}-${OS}-gnu/jni \
       ${MAIN_CLASS} \
-      --batch-job-array-index "${AWS_BATCH_JOB_ARRAY_INDEX}" --output "${OUTPUT_DIR}" "$@"
+      # --batch-job-array-index "${AWS_BATCH_JOB_ARRAY_INDEX}" --output "${OUTPUT_DIR}" "$@"
+      --batch-job-array-index "${AWS_BATCH_JOB_ARRAY_INDEX}" "$@"
 fi
 # we are using the traditional parallel GC - for noninteractive applications i.e. pure throughput it's still the best
 
