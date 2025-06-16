@@ -24,7 +24,8 @@ ARCH=$(uname -m | sed 's/x86_64/x86_64/;s/arm64/arm_64/')
 OS=$(uname -s | sed 's/Darwin/darwin/;s/Linux/linux/')
 
 MATSIM_TMPDIR=/tmp/matsim
-OUTPUT_DIR=/tmp/output
+# OUTPUT_DIR=/tmp/output
+OUTPUT_DIR=$OUTPUT_SCENARIO
 SYNC_SEMAPHORE=/tmp/sync-semaphore
 MATSIM_DONE_SEMAPHORE=/tmp/matsim-done-semaphore
 echo "Xmx: ${XMX}"
