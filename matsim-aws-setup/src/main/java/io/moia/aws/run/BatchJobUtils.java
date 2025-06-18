@@ -144,8 +144,12 @@ public class BatchJobUtils {
         private String jobQueue = BatchStack.MATSIM_JOB_QUEUE_ON_DEMAND;
 
         public JobSubmission memory(int memory) {
+            return memory(memory, (int) (memory * 0.95));
+        }
+
+        public JobSubmission memory(int memory, int jvmMemory) {
             resourceRequirements.add(ResourceRequirement.builder().type(ResourceType.MEMORY).value(String.valueOf(memory)).build());
-            environment.add(KeyValuePair.builder().name("XMX").value((int) (memory * 0.95) + "M").build());
+            environment.add(KeyValuePair.builder().name("XMX").value(jvmMemory + "M").build());
             return this;
         }
 
