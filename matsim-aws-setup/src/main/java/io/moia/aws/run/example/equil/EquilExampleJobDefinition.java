@@ -32,7 +32,7 @@ public class EquilExampleJobDefinition {
     public static final String OUTPUT_BUCKET = S3Stack.outputBucketName(account);
 
     public static void main(String[] args) {
-        BatchClient awsBatch = BatchClient.builder().region(Region.EU_CENTRAL_1).build();
+        BatchClient awsBatch = BatchClient.builder().region(Region.of(region)).build();
 
         ContainerProperties.Builder containerProperties = ContainerProperties.builder();
 
