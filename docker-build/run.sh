@@ -8,7 +8,11 @@ XMX="${XMX}"
 JOB_NAME="${JOB_NAME}"
 JOB_INPUT_BUCKET="${JOB_INPUT_BUCKET}"
 JOB_OUTPUT_BUCKET="${JOB_OUTPUT_BUCKET}"
-SCENARIO=${SCENARIO:=""}
+
+
+# Read comma-separated input directories into an array
+IFS=',' read -r -a INPUT_DIRECTORIES <<< "$INPUT_DIRECTORIES"
+
 
 if [ -z ${JOB_INPUT_BUCKET+x} ]; then
     echo "You need to specify a 'JOB_INPUT_BUCKET' environment variable (either in job definition or actual job)"
@@ -46,8 +50,13 @@ cd "${SCRIPT_DIR}/"
 
 
 echo "${SCRIPT_DIR}"
-echo "Syncing from:" "s3://${JOB_INPUT_BUCKET}/${SCENARIO}"
-aws s3 sync --only-show-errors "s3://${JOB_INPUT_BUCKET}/${SCENARIO}" "./"
+
+# sync all input directories
+for directory in "${INPUT_DIRECTORIES[@]}"; do
+  echo "Syncing from:" "s3://${JOB_INPUT_BUCKET}/${directory}"
+  aws s3 sync --only-show-errors "s3://${JOB_INPUT_BUCKET}/${directory}" "./${directory}"
+done
+
 
 # assume JAR_NAME="io/moia/a.jar:io/moia/b.jar:other/x.jar"
 IFS=':' read -r -a remote_jars <<< "$JAR_NAME"
