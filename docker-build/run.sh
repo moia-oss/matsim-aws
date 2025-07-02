@@ -8,6 +8,7 @@ XMX="${XMX}"
 JOB_NAME="${JOB_NAME}"
 JOB_INPUT_BUCKET="${JOB_INPUT_BUCKET}"
 JOB_OUTPUT_BUCKET="${JOB_OUTPUT_BUCKET}"
+SCENARIO=${SCENARIO:=""}
 
 if [ -z ${JOB_INPUT_BUCKET+x} ]; then
     echo "You need to specify a 'JOB_INPUT_BUCKET' environment variable (either in job definition or actual job)"
@@ -25,7 +26,6 @@ OS=$(uname -s | sed 's/Darwin/darwin/;s/Linux/linux/')
 
 MATSIM_TMPDIR=/tmp/matsim
 OUTPUT_DIR=/tmp/output
-#OUTPUT_DIR=$OUTPUT_SCENARIO
 SYNC_SEMAPHORE=/tmp/sync-semaphore
 MATSIM_DONE_SEMAPHORE=/tmp/matsim-done-semaphore
 echo "Xmx: ${XMX}"
