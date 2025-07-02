@@ -16,6 +16,8 @@ import java.util.*;
 
 public class BatchJobUtils {
 
+    public static String OUTPUT_DIRECTORY_IN_CONTAINER = "/tmp/output/";
+
     private final static S3Client S3 = S3Client.create();
 
     public static PutObjectResponse uploadFileToS3(String bucket, String key, Path file) {

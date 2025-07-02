@@ -14,7 +14,7 @@ public class EquilExampleJobSubmission {
         BatchJobUtils.JobRecord job = new BatchJobUtils.JobRecord(
                 EquilExampleJobDefinition.JOB_DEFINITION_NAME,
                 "equil-example",
-                List.of("--output", EquilExampleJobDefinition.OUTPUT_SCENARIO)
+                List.of("--output", BatchJobUtils.OUTPUT_DIRECTORY_IN_CONTAINER)
         );
 
         new BatchJobUtils.JobSubmission()
