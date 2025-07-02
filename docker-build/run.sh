@@ -11,7 +11,7 @@ JOB_OUTPUT_BUCKET="${JOB_OUTPUT_BUCKET}"
 
 
 # Read comma-separated input directories into an array
-IFS=',' read -r -a INPUT_DIRECTORIES <<< "$INPUT_DIRECTORIES"
+IFS=',' read -r -a INPUT_DIRECTORIES_ARRAY <<< "${INPUT_DIRECTORIES}"
 
 
 if [ -z ${JOB_INPUT_BUCKET+x} ]; then
@@ -52,7 +52,7 @@ cd "${SCRIPT_DIR}/"
 echo "${SCRIPT_DIR}"
 
 # sync all input directories
-for directory in "${INPUT_DIRECTORIES[@]}"; do
+for directory in "${INPUT_DIRECTORIES_ARRAY[@]}"; do
   echo "Syncing from:" "s3://${JOB_INPUT_BUCKET}/${directory}"
   aws s3 sync --only-show-errors "s3://${JOB_INPUT_BUCKET}/${directory}" "./${directory}"
 done
