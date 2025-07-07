@@ -70,12 +70,12 @@ def handler(event, _):
         "attachments": [
             {
                 "title": "Batch job link",
-                "title_link": f"https://eu-central-1.console.aws.amazon.com/batch/home?region=eu-central-1#jobs/detail/{execution_id}",
+                "title_link": f"https://{os.environ['REGION']}.console.aws.amazon.com/batch/home?region={os.environ['REGION']}#jobs/detail/{execution_id}",
                 "color": color_map.get(event["detail"]["status"], "#c0c0c0"),
             },
             {
                 "title": "Output S3",
-                "title_link": f"https://s3.console.aws.amazon.com/s3/buckets/{output_bucket}/{scenario}/{jobNameEnv}/?region=eu-central-1&tab=objects",
+                "title_link": f"https://s3.console.aws.amazon.com/s3/buckets/{output_bucket}/{scenario}/{jobNameEnv}/?region={os.environ['REGION']}&tab=objects",
                 "color": color_map.get(event["detail"]["status"], "#c0c0c0"),
             }
         ],

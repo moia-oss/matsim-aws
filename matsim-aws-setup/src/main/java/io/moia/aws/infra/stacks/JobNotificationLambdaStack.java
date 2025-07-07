@@ -43,7 +43,8 @@ public class JobNotificationLambdaStack extends Stack {
                             "SLACK_HOOK_URL", slackHookUrl,
                             "SLACK_TEAM_MENTION", "",
                             "SLACK_COLOR", "#6ECADC",
-                            "SLACK_CHANNEL", channelName
+                            "SLACK_CHANNEL", channelName,
+                            "REGION", System.getenv("REGION")
                     ))
                     .initialPolicy(List.of(policyStatement))
                     .build());
