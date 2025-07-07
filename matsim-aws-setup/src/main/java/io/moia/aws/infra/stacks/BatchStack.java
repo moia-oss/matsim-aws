@@ -49,7 +49,7 @@ public class BatchStack extends Stack {
                     .vpc(vpc)
                     .useOptimalInstanceClasses(false)
                     .launchTemplate(matsimLaunchTemplate)
-                    .instanceClasses(List.of(InstanceClass.M7G, InstanceClass.R7G))
+                    .instanceClasses(List.of(InstanceClass.M8G, InstanceClass.M7G, InstanceClass.R7G))
                     .allocationStrategy(AllocationStrategy.BEST_FIT_PROGRESSIVE)
                     .maxvCpus(512)
                     .minvCpus(0).build();
