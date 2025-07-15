@@ -35,7 +35,7 @@ public class JobNotificationLambdaStack extends Stack {
 
 
             Function functionOne = new Function(this, "JobNotification", FunctionProps.builder()
-                    .runtime(Runtime.PYTHON_3_9)
+                    .runtime(Runtime.PYTHON_3_13)
                     .functionName("MatSimJobNotificationLambda")
                     .code(Code.fromAsset("./notificationLambda/"))
                     .handler("JobNotification.handler")
