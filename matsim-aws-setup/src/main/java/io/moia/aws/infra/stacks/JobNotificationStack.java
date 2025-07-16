@@ -15,10 +15,10 @@ import software.constructs.Construct;
 import java.util.List;
 import java.util.Map;
 
-public class JobNotificationLambdaStack extends Stack {
+public class JobNotificationStack extends Stack {
 
-    public JobNotificationLambdaStack(Construct scope, final String name, StackProps stackProps,
-                                      String slackHookUrl, String channelName) {
+    public JobNotificationStack(Construct scope, final String name, StackProps stackProps,
+                                String slackHookUrl, String channelName) {
         super(scope, name, stackProps);
         new JobNotificationConstruct(this, name, slackHookUrl, channelName);
     }
@@ -34,9 +34,9 @@ public class JobNotificationLambdaStack extends Stack {
             policyStatement.addResources("*");
 
 
-            Function functionOne = new Function(this, "JobNotification", FunctionProps.builder()
+            Function functionOne = new Function(this, "BatchJobNotification", FunctionProps.builder()
                     .runtime(Runtime.PYTHON_3_13)
-                    .functionName("MatSimJobNotificationLambda")
+                    .functionName("MATSimJobNotifier")
                     .code(Code.fromAsset("./notificationLambda/"))
                     .handler("JobNotification.handler")
                     .environment(Map.of(
@@ -49,9 +49,9 @@ public class JobNotificationLambdaStack extends Stack {
                     .build());
 
 
-            Rule.Builder.create(this, "JobNotificationEventRule")
+            Rule.Builder.create(this, "BatchNotificationEventRule")
                     .description("Cloudwatch event that triggers the notification.")
-                    .ruleName("MatSimJobNotificationRule")
+                    .ruleName("BatchJobNotificationRule")
                     .eventPattern(
                             EventPattern.builder()
                                     .source(List.of("aws.batch"))
