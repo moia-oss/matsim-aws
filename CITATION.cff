@@ -8,6 +8,7 @@ authors:
   given-names: "Mark"
 - family-names: "Dubernet"
   given-names: "Thibaut"
+  orcid: "https://orcid.org/0000-0001-9741-9999"
 title: "MATSim-AWS"
 version: 1.0
 date-released: 2025-07-25
