@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Kuehnel"
+  given-names: "Nico"
+  orcid: "https://orcid.org/0000-0003-0527-8653"
+- family-names: "Frawley"
+  given-names: "Mark"
+- family-names: "Dubernet"
+  given-names: "Thibaut"
+  orcid: "https://orcid.org/0000-0001-9741-9999"
+title: "MATSim-AWS"
+version: 1.0
+date-released: 2025-07-25
+url: "https://github.com/moia-oss/matsim-aws/"
