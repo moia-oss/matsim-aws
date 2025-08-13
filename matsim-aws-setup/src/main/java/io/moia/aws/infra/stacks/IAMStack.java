@@ -33,7 +33,10 @@ public class IAMStack extends Stack {
                 matsimRole = Role.fromRoleName(this, "MatsimRole", MATSIM_BATCH_ROLE);
             } else {
                 RoleProps roleProps = RoleProps.builder()
-                        .assumedBy(new ServicePrincipal("ecs-tasks.amazonaws.com"))
+                        .assumedBy(new CompositePrincipal(
+                                new ServicePrincipal("ecs-tasks.amazonaws.com"),
+                                new ServicePrincipal("lambda.amazonaws.com")
+                        ))
                         .description("Role assumed in batch job")
                         .roleName(MATSIM_BATCH_ROLE)
                         .build();
