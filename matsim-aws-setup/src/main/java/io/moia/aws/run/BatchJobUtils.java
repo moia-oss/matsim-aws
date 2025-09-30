@@ -140,6 +140,7 @@ public class BatchJobUtils {
         private final List<ResourceRequirement> resourceRequirements = new ArrayList<>();
 
         private final ArrayProperties.Builder arrayPropertiesBuilder = ArrayProperties.builder();
+        private final Collection<JobDependency> jobDependencies = new ArrayList<>();
 
 
         private final Map<String, String> tags = new HashMap<>();
@@ -200,7 +201,28 @@ public class BatchJobUtils {
             return this;
         }
 
-        public void submit() {
+        public JobSubmission dependsOn(JobDependency... jobDependencies) {
+			Collections.addAll(this.jobDependencies, jobDependencies);
+            return this;
+        }
+
+        public JobSubmission dependsOn(SubmitJobResponse... submitJobResponses) {
+            return dependsOn(Arrays.asList(submitJobResponses));
+        }
+
+        public JobSubmission dependsOn(Collection<SubmitJobResponse> submitJobResponses) {
+            for (SubmitJobResponse submitJobResponse : submitJobResponses) {
+                JobDependency dependency = JobDependency.builder().jobId(
+                        submitJobResponse.jobId()
+                ).build();
+
+                this.jobDependencies.add(dependency);
+            }
+
+            return this;
+        }
+
+        public SubmitJobResponse submit() {
 
             DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss");
             LocalDateTime now = LocalDateTime.now();
@@ -224,6 +246,7 @@ public class BatchJobUtils {
                     .jobQueue(jobQueue)
                     .tags(tags)
                     .containerOverrides(containerOverrides)
+                    .dependsOn(jobDependencies)
                     .jobDefinition(jobRecord.jobDefinition());
 
             if (arrayProperties.size() != null && arrayProperties.size() > 1) {
@@ -239,6 +262,8 @@ public class BatchJobUtils {
                     + "\nID: " + response.jobId() + "\nARN: " + response.jobArn());
             System.out.println("https://" + region + ".console.aws.amazon.com/batch/home?region=" + region + "#jobs/detail/"
                     + response.jobId());
+
+            return response;
         }
     }
 }
