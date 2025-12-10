@@ -20,13 +20,9 @@ public class S3Stack extends Stack {
 
         String account = stackProps.getEnv().getAccount();
 
-        inputBucket = System.getenv(INPUT_BUCKET_ENV_VAR) != null ?
-                Bucket.fromBucketName(this, "InputBucket", inputBucketName(account)) :
-                inputDataBucket(this, account);
+        inputBucket = inputDataBucket(this, account);
 
-        outputBucket = System.getenv(INPUT_BUCKET_ENV_VAR) != null ?
-                Bucket.fromBucketName(this, "OutputBucket", outputBucketName(account)) :
-                outputDataBucket(this, account);
+        outputBucket = outputDataBucket(this, account);
 
         // Create CloudFormation outputs for the bucket ARNs
         CfnOutput.Builder.create(this, "outputBucketArn")
