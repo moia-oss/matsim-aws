@@ -5,58 +5,51 @@ import software.amazon.awscdk.services.s3.*;
 import software.constructs.Construct;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 
 public class S3Stack extends Stack {
+    private static String INPUT_BUCKET_ENV_VAR = "INPUT_BUCKET";
+    private static String OUTPUT_BUCKET_ENV_VAR = "OUTPUT_BUCKET";
 
     private static IBucket inputBucket;
     private static IBucket outputBucket;
 
     public S3Stack(Construct scope, final String name, StackProps stackProps) {
         super(scope, name, stackProps);
-        new S3Construct(this, name, stackProps);
-    }
 
-    private static class S3Construct extends Construct {
+        String account = stackProps.getEnv().getAccount();
 
+        inputBucket = System.getenv(INPUT_BUCKET_ENV_VAR) != null ?
+                Bucket.fromBucketName(this, "InputBucket", inputBucketName(account)) :
+                inputDataBucket(this, account);
 
-        S3Construct(final Construct parent, final String name, StackProps stackProps) {
-            super(parent, name);
+        outputBucket = System.getenv(INPUT_BUCKET_ENV_VAR) != null ?
+                Bucket.fromBucketName(this, "OutputBucket", outputBucketName(account)) :
+                outputDataBucket(this, account);
 
-          //  boolean useExisting = Boolean.parseBoolean((String) this.getNode().tryGetContext("useExistingBuckets"));
-            boolean useExisting = true;
+        // Create CloudFormation outputs for the bucket ARNs
+        CfnOutput.Builder.create(this, "outputBucketArn")
+                .value(outputBucket.getBucketArn())
+                .exportName("outputBucketArn")
+                .build();
 
-            String account = stackProps.getEnv().getAccount();
-            if (useExisting) {
-                inputBucket = Bucket.fromBucketName(this, "InputBucket", inputBucketName(account));
-                outputBucket = Bucket.fromBucketName(this, "OutputBucket", outputBucketName(account));
-            } else {
-                outputBucket = outputDataBucket(this, account);
-                inputBucket = inputDataBucket(this, account);
-            }
-
-            // Create CloudFormation outputs for the bucket ARNs
-            CfnOutput.Builder.create(this, "outputBucketArn")
-                    .value(outputBucket.getBucketArn())
-                    .exportName("outputBucketArn")
-                    .build();
-
-            CfnOutput.Builder.create(this, "inputBucketArn")
-                    .value(inputBucket.getBucketArn())
-                    .exportName("inputBucketArn")
-                    .build();
-
-        }
+        CfnOutput.Builder.create(this, "inputBucketArn")
+                .value(inputBucket.getBucketArn())
+                .exportName("inputBucketArn")
+                .build();
     }
 
     private static final String PREFIX = "matsim-jobs";
 
-    public static String outputBucketName(String accountName) {
-        return PREFIX + "-output-" + accountName;
+    public static String outputBucketName(String account) {
+        String fromEnv = System.getenv(OUTPUT_BUCKET_ENV_VAR);
+        return fromEnv != null ? fromEnv : PREFIX + "-output-" + account;
     }
 
-    public static String inputBucketName(String accountName) {
-        return PREFIX + "-input-" + accountName;
+    public static String inputBucketName(String account) {
+        String fromEnv = System.getenv(INPUT_BUCKET_ENV_VAR);
+        return fromEnv != null ? fromEnv : PREFIX + "-input-" + account;
     }
 
     private static Bucket outputDataBucket(Construct scope, String accountName) {
