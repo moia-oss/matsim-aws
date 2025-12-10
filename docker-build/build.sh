@@ -8,7 +8,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get upgrade -qq --assume-yes
 # some custom extensions to MATSim require libglpk-java
-apt install openjdk-21-jdk --assume-yes
+apt install openjdk-25-jdk --assume-yes
 apt-get install -qq --assume-yes gzip libglpk-java curl unzip
 
 # Get the architecture of the current machine
