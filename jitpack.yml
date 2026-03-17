@@ -1,6 +1,4 @@
 jdk:
   - openjdk21
-build:
-  - cd matsim-aws-setup && mvn install -DskipTests --no-transfer-progress
-artifacts:
-  - matsim-aws-setup/target/matsim-aws-setup-*.jar
+install:
+  - mvn install -f matsim-aws-setup/pom.xml -DskipTests --no-transfer-progress
