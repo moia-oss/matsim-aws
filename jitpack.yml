@@ -1,4 +1,0 @@
-jdk:
-  - openjdk21
-install:
-  - mvn install -f matsim-aws-setup/pom.xml -DskipTests --no-transfer-progress
