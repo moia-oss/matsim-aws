@@ -57,6 +57,14 @@ for directory in "${INPUT_DIRECTORIES_ARRAY[@]}"; do
   aws s3 sync --only-show-errors "s3://${JOB_INPUT_BUCKET}/${directory}" "./${directory}"
 done
 
+# Per-file input copying (INPUT_FILES is a comma-separated list of S3-relative paths)
+IFS=',' read -r -a INPUT_FILES_ARRAY <<< "${INPUT_FILES:-}"
+for file in "${INPUT_FILES_ARRAY[@]}"; do
+    [[ -z "$file" ]] && continue
+    mkdir -p "$(dirname "${file}")"
+    aws s3 cp --only-show-errors "s3://${JOB_INPUT_BUCKET}/${file}" "./${file}"
+done
+
 
 # assume JAR_NAME="io/moia/a.jar:io/moia/b.jar:other/x.jar"
 IFS=':' read -r -a remote_jars <<< "$JAR_NAME"
