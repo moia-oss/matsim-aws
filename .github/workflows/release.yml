@@ -1,0 +1,44 @@
+name: Release to Maven Central
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Import GPG key
+        run: echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+
+      - name: Validate tag matches POM version
+        run: |
+          TAG_VERSION=${GITHUB_REF_NAME#v}
+          POM_VERSION=$(mvn help:evaluate -f matsim-aws-setup/pom.xml \
+            -Dexpression=project.version -q -DforceStdout)
+          if [ "$TAG_VERSION" != "$POM_VERSION" ]; then
+            echo "ERROR: tag $TAG_VERSION does not match POM version $POM_VERSION"
+            exit 1
+          fi
+
+      - name: Deploy to Maven Central
+        env:
+          CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
+          CENTRAL_TOKEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          mvn --batch-mode deploy \
+            -f matsim-aws-setup/pom.xml \
+            -DskipTests \
+            -Pgpg-sign \
+            --settings .github/maven-settings.xml
