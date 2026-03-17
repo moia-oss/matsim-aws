@@ -95,6 +95,7 @@ echo "$@" > "${OUTPUT_DIR}/matsim_parameters.txt"
 aws s3 sync --only-show-errors "${OUTPUT_DIR}" "${SYNC_PATH}"
 
 
+set +e
 if [ -z ${AWS_BATCH_JOB_ARRAY_INDEX+x} ]; then
     echo "Single batch job"
     java -XX:+UseParallelGC \
@@ -115,9 +116,52 @@ else
       --batch-job-array-index "${AWS_BATCH_JOB_ARRAY_INDEX}" "$@"
 fi
 # we are using the traditional parallel GC - for noninteractive applications i.e. pure throughput it's still the best
+RET=$?
+set -e
 
+if [ "${RET}" -eq 0 ]; then STATUS="SUCCESS"; else STATUS="FAILED"; fi
+
+mkdir -p /tmp/output
+EXTRA_FIELDS=""
+if [ -n "${RUN_METADATA_EXTRA:-}" ]; then
+    EXTRA_FIELDS=", ${RUN_METADATA_EXTRA}"
+fi
+cat > /tmp/output/_run_metadata.json <<EOF
+{
+  "jobName": "${JOB_NAME}",
+  "outputPath": "${OUTPUT_SCENARIO}/${JOB_NAME}",
+  "completedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "status": "${STATUS}"${EXTRA_FIELDS}
+}
+EOF
 
 aws s3 sync --only-show-errors "${OUTPUT_DIR}" "${SYNC_PATH}"
+
+# Lowercase the status for use as an S3 tag value
+STATUS_TAG=$(echo "${STATUS}" | tr '[:upper:]' '[:lower:]')
+
+# Sentinel tag on _run_metadata.json (immediate observability, one API call)
+aws s3api put-object-tagging \
+    --bucket "${JOB_OUTPUT_BUCKET}" \
+    --key "${OUTPUT_SCENARIO}/${JOB_NAME}/_run_metadata.json" \
+    --tagging "TagSet=[{Key=SimulationStatus,Value=${STATUS_TAG}}]"
+
+# Bulk-tag all output objects (for lifecycle rule storage cleanup, failed runs only)
+if [ "${STATUS}" = "FAILED" ]; then
+    aws s3api list-objects-v2 \
+        --bucket "${JOB_OUTPUT_BUCKET}" \
+        --prefix "${OUTPUT_SCENARIO}/${JOB_NAME}/" \
+        --query "Contents[].Key" \
+        --output text \
+    | tr '\t' '\n' \
+    | while read -r key; do
+        [[ -z "$key" ]] && continue
+        aws s3api put-object-tagging \
+            --bucket "${JOB_OUTPUT_BUCKET}" \
+            --key "${key}" \
+            --tagging "TagSet=[{Key=SimulationStatus,Value=failed}]"
+      done
+fi
 
 # make sure a full sync cycle was completed before we end the job
 while [ "${MATSIM_DONE_SEMAPHORE}" -nt "${SYNC_SEMAPHORE}" ]; do
