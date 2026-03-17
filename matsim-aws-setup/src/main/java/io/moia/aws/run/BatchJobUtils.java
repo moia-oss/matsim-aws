@@ -201,6 +201,16 @@ public class BatchJobUtils {
             return this;
         }
 
+        public JobSubmission inputDirectories(String directories) {
+            environment.add(KeyValuePair.builder().name("INPUT_DIRECTORIES").value(directories).build());
+            return this;
+        }
+
+        public JobSubmission environment(String name, String value) {
+            environment.add(KeyValuePair.builder().name(name).value(value).build());
+            return this;
+        }
+
         public JobSubmission dependsOn(JobDependency... jobDependencies) {
 			Collections.addAll(this.jobDependencies, jobDependencies);
             return this;
