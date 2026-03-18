@@ -131,7 +131,9 @@ cat > /tmp/output/_run_metadata.json <<EOF
   "jobName": "${JOB_NAME}",
   "outputPath": "${OUTPUT_SCENARIO}/${JOB_NAME}",
   "completedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "status": "${STATUS}"${EXTRA_FIELDS}
+  "status": "${STATUS}",
+  "inputFiles": "${INPUT_FILES:-}",
+  "inputDirectories": "${INPUT_DIRECTORIES:-}"${EXTRA_FIELDS}
 }
 EOF
 
