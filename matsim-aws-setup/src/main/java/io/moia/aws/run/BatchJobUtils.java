@@ -135,6 +135,8 @@ public class BatchJobUtils {
 
         private JobRecord jobRecord;
         private Region region;
+        private String outputScenario;
+        private String jobName;
 
         private final Collection<KeyValuePair> environment = new HashSet<>();
         private final List<ResourceRequirement> resourceRequirements = new ArrayList<>();
@@ -182,8 +184,20 @@ public class BatchJobUtils {
         }
 
         public JobSubmission outputScenario(String outputScenario){
+            this.outputScenario = outputScenario;
             this.environment.add(KeyValuePair.builder().name("OUTPUT_SCENARIO").value(outputScenario).build());
             return this;
+        }
+
+        /**
+         * Returns the S3 key prefix where this job's output is written: {@code {outputScenario}/{jobName}}.
+         * Only valid after {@link #submit()} has been called.
+         */
+        public String getOutputPath() {
+            if (outputScenario == null || jobName == null) {
+                throw new IllegalStateException("getOutputPath() must be called after submit()");
+            }
+            return outputScenario + "/" + jobName;
         }
 
         public JobSubmission scenario(String scenario){
@@ -201,8 +215,13 @@ public class BatchJobUtils {
             return this;
         }
 
-        public JobSubmission inputDirectories(String directories) {
-            environment.add(KeyValuePair.builder().name("INPUT_DIRECTORIES").value(directories).build());
+        /**
+         * Comma-separated input paths. Relative paths are resolved against {@code JOB_INPUT_BUCKET}.
+         * Full {@code s3://} URIs are used as-is, enabling reads from any bucket (e.g. the output bucket).
+         * A trailing slash forces a directory sync; otherwise the container auto-detects file vs. prefix.
+         */
+        public JobSubmission inputPaths(String paths) {
+            environment.add(KeyValuePair.builder().name("INPUT_PATHS").value(paths).build());
             return this;
         }
 
@@ -237,7 +256,7 @@ public class BatchJobUtils {
             DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss");
             LocalDateTime now = LocalDateTime.now();
 
-            String jobName = dtf.format(now).concat("-").concat(jobRecord.jobName());
+            jobName = dtf.format(now).concat("-").concat(jobRecord.jobName());
 
             environment.add(KeyValuePair.builder().name("JOB_NAME").value(jobName).build());
 

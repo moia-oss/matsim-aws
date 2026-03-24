@@ -10,9 +10,6 @@ JOB_INPUT_BUCKET="${JOB_INPUT_BUCKET}"
 JOB_OUTPUT_BUCKET="${JOB_OUTPUT_BUCKET}"
 
 
-# Read comma-separated input directories into an array
-IFS=',' read -r -a INPUT_DIRECTORIES_ARRAY <<< "${INPUT_DIRECTORIES}"
-
 
 if [ -z ${JOB_INPUT_BUCKET+x} ]; then
     echo "You need to specify a 'JOB_INPUT_BUCKET' environment variable (either in job definition or actual job)"
@@ -51,18 +48,49 @@ cd "${SCRIPT_DIR}/"
 
 echo "${SCRIPT_DIR}"
 
-# sync all input directories
-for directory in "${INPUT_DIRECTORIES_ARRAY[@]}"; do
-  echo "Syncing from:" "s3://${JOB_INPUT_BUCKET}/${directory}"
-  aws s3 sync --only-show-errors "s3://${JOB_INPUT_BUCKET}/${directory}" "./${directory}"
-done
+# Resolve a path entry to a full S3 URI: pass through if already s3://, else prepend input bucket.
+resolve_s3_uri() {
+  local entry="$1"
+  if [[ "$entry" == s3://* ]]; then
+    echo "$entry"
+  else
+    echo "s3://${JOB_INPUT_BUCKET}/${entry}"
+  fi
+}
 
-# Per-file input copying (INPUT_FILES is a comma-separated list of S3-relative paths)
-IFS=',' read -r -a INPUT_FILES_ARRAY <<< "${INPUT_FILES:-}"
-for file in "${INPUT_FILES_ARRAY[@]}"; do
-    [[ -z "$file" ]] && continue
-    mkdir -p "$(dirname "${file}")"
-    aws s3 cp --only-show-errors "s3://${JOB_INPUT_BUCKET}/${file}" "./${file}"
+# Strip s3://bucket-name/ to obtain the local relative path.
+# e.g. s3://matsim-jobs-input-123456789/examples/equil/ -> examples/equil/
+s3_uri_to_local_path() {
+  local without_scheme="${1#s3://}"   # strip "s3://"
+  echo "${without_scheme#*/}"         # strip "bucket-name/"
+}
+
+# Fetch all input paths.
+# Each entry is either a relative path (resolved against JOB_INPUT_BUCKET) or a full s3:// URI.
+# Trailing slash forces directory sync; otherwise auto-detects file vs. prefix via head-object.
+IFS=',' read -r -a INPUT_PATHS_ARRAY <<< "${INPUT_PATHS:-}"
+for entry in "${INPUT_PATHS_ARRAY[@]}"; do
+  [[ -z "$entry" ]] && continue
+  uri=$(resolve_s3_uri "$entry")
+  local_path=$(s3_uri_to_local_path "$uri")
+  if [[ "$entry" == */ ]]; then
+    echo "Syncing directory from: ${uri}"
+    mkdir -p "./${local_path}"
+    aws s3 sync --only-show-errors "$uri" "./${local_path}"
+  else
+    without_scheme="${uri#s3://}"
+    bucket="${without_scheme%%/*}"
+    key="${without_scheme#*/}"
+    if aws s3api head-object --bucket "$bucket" --key "$key" > /dev/null 2>&1; then
+      echo "Copying file from: ${uri}"
+      mkdir -p "$(dirname "./${local_path}")"
+      aws s3 cp --only-show-errors "$uri" "./${local_path}"
+    else
+      echo "Syncing directory from: ${uri}"
+      mkdir -p "./${local_path}"
+      aws s3 sync --only-show-errors "$uri" "./${local_path}"
+    fi
+  fi
 done
 
 
@@ -132,8 +160,7 @@ cat > /tmp/output/_run_metadata.json <<EOF
   "outputPath": "${OUTPUT_SCENARIO}/${JOB_NAME}",
   "completedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "status": "${STATUS}",
-  "inputFiles": "${INPUT_FILES:-}",
-  "inputDirectories": "${INPUT_DIRECTORIES:-}"${EXTRA_FIELDS}
+  "inputPaths": "${INPUT_PATHS:-}"${EXTRA_FIELDS}
 }
 EOF
 
