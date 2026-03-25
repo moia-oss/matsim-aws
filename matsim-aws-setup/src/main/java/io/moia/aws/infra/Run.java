@@ -5,6 +5,12 @@ import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.s3.IBucket;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.core.exception.SdkException;
+
+import java.util.List;
 
 public class Run {
 
@@ -23,8 +29,32 @@ public class Run {
                 .build();
     }
 
+    private static void validateBucketsDoNotExist() {
+        String account = System.getenv("AWS_ACCOUNT");
+        String region = System.getenv("REGION");
+        List<String> bucketNames = List.of(S3Stack.inputBucketName(account), S3Stack.outputBucketName(account));
+        try (S3Client s3 = S3Client.builder().region(Region.of(region)).build()) {
+            for (String bucketName : bucketNames) {
+                try {
+                    s3.headBucket(r -> r.bucket(bucketName));
+                    throw new IllegalStateException(
+                            "Bucket '" + bucketName + "' already exists in account " + account + ". " +
+                            "Set USE_EXISTING_BUCKETS=true in environment.env to use the existing buckets.");
+                } catch (NoSuchBucketException ignored) {
+                    // bucket does not exist — safe to create
+                } catch (SdkException ignored) {
+                    // cannot verify (e.g. insufficient permissions) — skip check and let CloudFormation handle it
+                }
+            }
+        }
+    }
+
 
     public static void main(final String[] args) {
+
+        if (!USE_EXISTING_BUCKETS) {
+            validateBucketsDoNotExist();
+        }
 
         App app = new App();
 
