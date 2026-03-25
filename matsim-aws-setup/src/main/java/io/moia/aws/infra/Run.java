@@ -11,6 +11,7 @@ public class Run {
     private static final Environment ENV = makeEnv(System.getenv("AWS_ACCOUNT"), System.getenv("REGION"));
 
     private static final boolean DEPLOY_SLACK_LAMBDA = Boolean.parseBoolean(System.getenv("DEPLOY_SLACK_LAMBDA"));
+    private static final boolean USE_EXISTING_BUCKETS = Boolean.parseBoolean(System.getenv("USE_EXISTING_BUCKETS"));
     private static final String SLACK_HOOK_URL = System.getenv("SLACK_HOOK_URL");
     private static final String SLACK_CHANNEL_NAME = System.getenv("SLACK_CHANNEL_NAME");
 
@@ -29,7 +30,7 @@ public class Run {
 
         StackProps stackProps = StackProps.builder().env(ENV).build();
         VPCStack vpcStack = new VPCStack(app, "VpcStack", stackProps);
-        S3Stack s3Stack = new S3Stack(app, "S3Stack", stackProps);
+        S3Stack s3Stack = new S3Stack(app, "S3Stack", stackProps, USE_EXISTING_BUCKETS);
 
         IBucket inputBucket = s3Stack.getInputBucket();
         IBucket outputBucket = s3Stack.getOutputBucket();

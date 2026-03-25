@@ -14,19 +14,16 @@ public class S3Stack extends Stack {
     private static IBucket inputBucket;
     private static IBucket outputBucket;
 
-    public S3Stack(Construct scope, final String name, StackProps stackProps) {
+    public S3Stack(Construct scope, final String name, StackProps stackProps, boolean useExistingBuckets) {
         super(scope, name, stackProps);
-        new S3Construct(this, name, stackProps);
+        new S3Construct(this, name, stackProps, useExistingBuckets);
     }
 
     private static class S3Construct extends Construct {
 
 
-        S3Construct(final Construct parent, final String name, StackProps stackProps) {
+        S3Construct(final Construct parent, final String name, StackProps stackProps, boolean useExisting) {
             super(parent, name);
-
-          //  boolean useExisting = Boolean.parseBoolean((String) this.getNode().tryGetContext("useExistingBuckets"));
-            boolean useExisting = true;
 
             String account = stackProps.getEnv().getAccount();
             if (useExisting) {
