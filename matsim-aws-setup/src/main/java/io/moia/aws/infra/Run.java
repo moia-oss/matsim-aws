@@ -44,7 +44,7 @@ public class Run {
         new IAMStack(app, "IAMStack", stackProps, inputBucket, outputBucket);
         new ECRStack(app, "ECRStack", stackProps);
         new BatchStack(app, "BatchStack", stackProps, vpcStack.getVpc());
-        if(DEPLOY_SLACK_LAMBDA) {
+        if (DEPLOY_SLACK_LAMBDA) {
             new JobNotificationLambdaStack(app, "JobNotificationStack", stackProps, SLACK_HOOK_URL, SLACK_CHANNEL_NAME);
         }
         app.synth();

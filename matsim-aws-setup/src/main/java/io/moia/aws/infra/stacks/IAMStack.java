@@ -39,11 +39,11 @@ public class IAMStack extends Stack {
                         .build();
 
                  matsimRole = new Role(this, "MatsimRole", roleProps);
-
                 for (PolicyStatement statement : statements) {
                     ((Role) matsimRole).addToPolicy(statement);
                 }
             }
+
 
             inputBucket.grantReadWrite(matsimRole);
             outputBucket.grantReadWrite(matsimRole);
