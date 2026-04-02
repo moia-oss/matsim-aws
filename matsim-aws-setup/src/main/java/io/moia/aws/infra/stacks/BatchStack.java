@@ -3,10 +3,14 @@ package io.moia.aws.infra.stacks;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.batch.AllocationStrategy;
+import software.amazon.awscdk.services.batch.EcsMachineImage;
+import software.amazon.awscdk.services.batch.EcsMachineImageType;
 import software.amazon.awscdk.services.batch.JobQueue;
 import software.amazon.awscdk.services.batch.ManagedEc2EcsComputeEnvironment;
 import software.amazon.awscdk.services.batch.ManagedEc2EcsComputeEnvironmentProps;
 import software.amazon.awscdk.services.ec2.*;
+import software.amazon.awscdk.services.ecs.AmiHardwareType;
+import software.amazon.awscdk.services.ecs.EcsOptimizedImage;
 import software.constructs.Construct;
 
 import java.util.List;
@@ -50,6 +54,12 @@ public class BatchStack extends Stack {
                     .useOptimalInstanceClasses(false)
                     .launchTemplate(matsimLaunchTemplate)
                     .instanceClasses(List.of(InstanceClass.M8G, InstanceClass.M7G, InstanceClass.R7G))
+                    .images(List.of(
+                            EcsMachineImage.builder()
+                                    .image(EcsOptimizedImage.amazonLinux2023(AmiHardwareType.ARM))
+                                    .imageType(EcsMachineImageType.ECS_AL2023)
+                                    .build()
+                    ))
                     .allocationStrategy(AllocationStrategy.BEST_FIT_PROGRESSIVE)
                     .maxvCpus(512)
                     .minvCpus(0).build();

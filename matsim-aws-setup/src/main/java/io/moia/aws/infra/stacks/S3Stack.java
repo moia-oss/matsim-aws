@@ -23,8 +23,8 @@ public class S3Stack extends Stack {
         S3Construct(final Construct parent, final String name, StackProps stackProps) {
             super(parent, name);
 
-          //  boolean useExisting = Boolean.parseBoolean((String) this.getNode().tryGetContext("useExistingBuckets"));
-            boolean useExisting = true;
+            boolean useExisting = Boolean.parseBoolean((String) this.getNode().tryGetContext("useExistingBuckets"));
+//            boolean useExisting = true;
 
             String account = stackProps.getEnv().getAccount();
             if (useExisting) {

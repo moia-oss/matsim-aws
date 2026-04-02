@@ -34,3 +34,4 @@ matsim-aws-setup/cdk.context.json
 /output/
 environment.env
 .envrc
+*.bak
