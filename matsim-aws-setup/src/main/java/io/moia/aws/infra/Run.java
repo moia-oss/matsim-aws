@@ -24,7 +24,7 @@ public class Run {
     }
 
 
-    static void main() {
+    public static void main(final String[] args) {
 
         App app = new App();
 
