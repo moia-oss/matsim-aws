@@ -2,10 +2,15 @@ package io.moia.aws.infra.stacks;
 
 import software.amazon.awscdk.*;
 import software.amazon.awscdk.services.s3.*;
+import software.amazon.awssdk.core.exception.SdkException;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.constructs.Construct;
 import software.constructs.Node;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 
@@ -29,6 +34,9 @@ public class S3Stack extends Stack {
 //            boolean useExisting = true;
 
             String account = stackProps.getEnv().getAccount();
+            if (!useExisting) {
+                S3Stack.validateBucketsDoNotExist(account, stackProps.getEnv().getRegion());
+            }
             if (useExisting) {
                 inputBucket = Bucket.fromBucketName(this, "InputBucket", inputBucketName(account));
                 outputBucket = Bucket.fromBucketName(this, "OutputBucket", outputBucketName(account));
@@ -122,6 +130,24 @@ public class S3Stack extends Stack {
                 .removalPolicy(RemovalPolicy.RETAIN)
                 .lifecycleRules(Arrays.asList(rule1, rule2))
                 .build();
+    }
+
+    static void validateBucketsDoNotExist(String account, String region) {
+        List<String> bucketNames = List.of(inputBucketName(account), outputBucketName(account));
+        try (S3Client s3 = S3Client.builder().region(Region.of(region)).build()) {
+            for (String bucketName : bucketNames) {
+                try {
+                    s3.headBucket(r -> r.bucket(bucketName));
+                    throw new IllegalStateException(
+                            "Bucket '" + bucketName + "' already exists in account " + account + ". " +
+                            "Set USE_EXISTING_BUCKETS=true in environment.env to use the existing buckets.");
+                } catch (NoSuchBucketException ignored) {
+                    // bucket does not exist — safe to create
+                } catch (SdkException ignored) {
+                    // cannot verify (e.g. insufficient permissions) — skip check and let CloudFormation handle it
+                }
+            }
+        }
     }
 
     public IBucket getInputBucket() {
