@@ -104,13 +104,25 @@ The file always contains:
 | `jobName` | The AWS Batch job name |
 | `outputPath` | The full S3 key prefix for this job's outputs |
 | `completedAt` | ISO 8601 UTC timestamp of job completion |
-| `status` | `"SUCCESS"` or `"FAILED"` |
+| `status` | `"success"` or `"failed"` |
 
 Additional fields can be injected at submission time by setting the `RUN_METADATA_EXTRA` environment variable (via container overrides) to a JSON fragment — comma-separated `"key": "value"` pairs without the enclosing braces:
 
 ```bash
 RUN_METADATA_EXTRA='"triggeredBy": "alice", "githubRunId": "12345"'
 ```
+
+## S3 Buckets
+
+By default, the deployment creates two S3 buckets (input and output) and manages their configuration — including lifecycle rules — via CloudFormation. Re-running the deploy script on an existing setup is safe: CloudFormation updates bucket properties in-place without recreating them or affecting stored data.
+
+If you want to bring your own pre-existing buckets and have CDK reference them without managing their configuration, set the `useExistingBuckets` context flag:
+
+```bash
+cdk deploy --all --context useExistingBuckets=true
+```
+
+When this flag is set, CDK imports the buckets by their expected names and does not create or modify them. Lifecycle rules and other bucket properties will not be applied.
 
 ## Automatic Cleanup of Failed Runs
 
