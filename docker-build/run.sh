@@ -147,7 +147,7 @@ fi
 RET=$?
 set -e
 
-if [ "${RET}" -eq 0 ]; then STATUS="SUCCESS"; else STATUS="FAILED"; fi
+if [ "${RET}" -eq 0 ]; then STATUS="success"; else STATUS="failed"; fi
 
 mkdir -p /tmp/output
 EXTRA_FIELDS=""
@@ -166,17 +166,14 @@ EOF
 
 aws s3 sync --only-show-errors "${OUTPUT_DIR}" "${SYNC_PATH}"
 
-# Lowercase the status for use as an S3 tag value
-STATUS_TAG=$(echo "${STATUS}" | tr '[:upper:]' '[:lower:]')
-
 # Sentinel tag on _run_metadata.json (immediate observability, one API call)
 aws s3api put-object-tagging \
     --bucket "${JOB_OUTPUT_BUCKET}" \
     --key "${OUTPUT_SCENARIO}/${JOB_NAME}/_run_metadata.json" \
-    --tagging "TagSet=[{Key=SimulationStatus,Value=${STATUS_TAG}}]"
+    --tagging "TagSet=[{Key=SimulationStatus,Value=${STATUS}}]"
 
 # Bulk-tag all output objects (for lifecycle rule storage cleanup, failed runs only)
-if [ "${STATUS}" = "FAILED" ]; then
+if [ "${STATUS}" = "failed" ]; then
     aws s3api list-objects-v2 \
         --bucket "${JOB_OUTPUT_BUCKET}" \
         --prefix "${OUTPUT_SCENARIO}/${JOB_NAME}/" \
