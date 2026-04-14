@@ -3,8 +3,10 @@ package io.moia.aws.infra.stacks;
 import software.amazon.awscdk.*;
 import software.amazon.awscdk.services.s3.*;
 import software.constructs.Construct;
+import software.constructs.Node;
 
 import java.util.Arrays;
+import java.util.Map;
 
 
 public class S3Stack extends Stack {
@@ -78,10 +80,22 @@ public class S3Stack extends Stack {
                 .abortIncompleteMultipartUploadAfter(Duration.days(7))
                 .build();
 
+        Object retentionCtx = Node.of(scope).tryGetContext("failedRunRetentionDays");
+        int retentionDays = retentionCtx != null
+                ? Integer.parseInt(retentionCtx.toString())
+                : 7;
+
+        LifecycleRule rule3 = LifecycleRule.builder()
+                .id("DeleteFailedSimulationOutputs")
+                .enabled(true)
+                .tagFilters(Map.of("SimulationStatus", "failed"))
+                .expiration(Duration.days(retentionDays))
+                .build();
+
         return Bucket.Builder.create(scope, "OutputBucket")
                 .bucketName(bucketName)
                 .removalPolicy(RemovalPolicy.RETAIN)
-                .lifecycleRules(Arrays.asList(rule1, rule2))
+                .lifecycleRules(Arrays.asList(rule1, rule2, rule3))
                 .build();
     }
 

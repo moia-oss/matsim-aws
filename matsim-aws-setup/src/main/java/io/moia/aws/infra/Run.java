@@ -23,7 +23,6 @@ public class Run {
                 .build();
     }
 
-
     public static void main(final String[] args) {
 
         App app = new App();
