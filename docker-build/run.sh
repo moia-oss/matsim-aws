@@ -10,9 +10,6 @@ JOB_INPUT_BUCKET="${JOB_INPUT_BUCKET}"
 JOB_OUTPUT_BUCKET="${JOB_OUTPUT_BUCKET}"
 
 
-# Read comma-separated input directories into an array
-IFS=',' read -r -a INPUT_DIRECTORIES_ARRAY <<< "${INPUT_DIRECTORIES}"
-
 
 if [ -z ${JOB_INPUT_BUCKET+x} ]; then
     echo "You need to specify a 'JOB_INPUT_BUCKET' environment variable (either in job definition or actual job)"
@@ -51,10 +48,49 @@ cd "${SCRIPT_DIR}/"
 
 echo "${SCRIPT_DIR}"
 
-# sync all input directories
-for directory in "${INPUT_DIRECTORIES_ARRAY[@]}"; do
-  echo "Syncing from:" "s3://${JOB_INPUT_BUCKET}/${directory}"
-  aws s3 sync --only-show-errors "s3://${JOB_INPUT_BUCKET}/${directory}" "./${directory}"
+# Resolve a path entry to a full S3 URI: pass through if already s3://, else prepend input bucket.
+resolve_s3_uri() {
+  local entry="$1"
+  if [[ "$entry" == s3://* ]]; then
+    echo "$entry"
+  else
+    echo "s3://${JOB_INPUT_BUCKET}/${entry}"
+  fi
+}
+
+# Strip s3://bucket-name/ to obtain the local relative path.
+# e.g. s3://matsim-jobs-input-123456789/examples/equil/ -> examples/equil/
+s3_uri_to_local_path() {
+  local without_scheme="${1#s3://}"   # strip "s3://"
+  echo "${without_scheme#*/}"         # strip "bucket-name/"
+}
+
+# Fetch all input paths.
+# Each entry is either a relative path (resolved against JOB_INPUT_BUCKET) or a full s3:// URI.
+# Trailing slash forces directory sync; otherwise auto-detects file vs. prefix via head-object.
+IFS=',' read -r -a INPUT_PATHS_ARRAY <<< "${INPUT_PATHS:-}"
+for entry in "${INPUT_PATHS_ARRAY[@]}"; do
+  [[ -z "$entry" ]] && continue
+  uri=$(resolve_s3_uri "$entry")
+  local_path=$(s3_uri_to_local_path "$uri")
+  if [[ "$entry" == */ ]]; then
+    echo "Syncing directory from: ${uri}"
+    mkdir -p "./${local_path}"
+    aws s3 sync --only-show-errors "$uri" "./${local_path}"
+  else
+    without_scheme="${uri#s3://}"
+    bucket="${without_scheme%%/*}"
+    key="${without_scheme#*/}"
+    if aws s3api head-object --bucket "$bucket" --key "$key" > /dev/null 2>&1; then
+      echo "Copying file from: ${uri}"
+      mkdir -p "$(dirname "./${local_path}")"
+      aws s3 cp --only-show-errors "$uri" "./${local_path}"
+    else
+      echo "Syncing directory from: ${uri}"
+      mkdir -p "./${local_path}"
+      aws s3 sync --only-show-errors "$uri" "./${local_path}"
+    fi
+  fi
 done
 
 
@@ -87,6 +123,7 @@ echo "$@" > "${OUTPUT_DIR}/matsim_parameters.txt"
 aws s3 sync --only-show-errors "${OUTPUT_DIR}" "${SYNC_PATH}"
 
 
+set +e
 if [ -z ${AWS_BATCH_JOB_ARRAY_INDEX+x} ]; then
     echo "Single batch job"
     java -XX:+UseParallelGC \
@@ -107,9 +144,50 @@ else
       --batch-job-array-index "${AWS_BATCH_JOB_ARRAY_INDEX}" "$@"
 fi
 # we are using the traditional parallel GC - for noninteractive applications i.e. pure throughput it's still the best
+RET=$?
+set -e
 
+if [ "${RET}" -eq 0 ]; then STATUS="success"; else STATUS="failed"; fi
+
+mkdir -p /tmp/output
+EXTRA_FIELDS=""
+if [ -n "${RUN_METADATA_EXTRA:-}" ]; then
+    EXTRA_FIELDS=", ${RUN_METADATA_EXTRA}"
+fi
+cat > /tmp/output/_run_metadata.json <<EOF
+{
+  "jobName": "${JOB_NAME}",
+  "outputPath": "${OUTPUT_SCENARIO}/${JOB_NAME}",
+  "completedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "status": "${STATUS}",
+  "inputPaths": "${INPUT_PATHS:-}"${EXTRA_FIELDS}
+}
+EOF
 
 aws s3 sync --only-show-errors "${OUTPUT_DIR}" "${SYNC_PATH}"
+
+# Sentinel tag on _run_metadata.json (immediate observability, one API call)
+aws s3api put-object-tagging \
+    --bucket "${JOB_OUTPUT_BUCKET}" \
+    --key "${OUTPUT_SCENARIO}/${JOB_NAME}/_run_metadata.json" \
+    --tagging "TagSet=[{Key=SimulationStatus,Value=${STATUS}}]"
+
+# Bulk-tag all output objects (for lifecycle rule storage cleanup, failed runs only)
+if [ "${STATUS}" = "failed" ]; then
+    aws s3api list-objects-v2 \
+        --bucket "${JOB_OUTPUT_BUCKET}" \
+        --prefix "${OUTPUT_SCENARIO}/${JOB_NAME}/" \
+        --query "Contents[].Key" \
+        --output text \
+    | tr '\t' '\n' \
+    | while read -r key; do
+        [[ -z "$key" ]] && continue
+        aws s3api put-object-tagging \
+            --bucket "${JOB_OUTPUT_BUCKET}" \
+            --key "${key}" \
+            --tagging "TagSet=[{Key=SimulationStatus,Value=failed}]"
+      done
+fi
 
 # make sure a full sync cycle was completed before we end the job
 while [ "${MATSIM_DONE_SEMAPHORE}" -nt "${SYNC_SEMAPHORE}" ]; do
