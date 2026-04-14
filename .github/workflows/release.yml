@@ -1,13 +1,17 @@
 name: Release to Maven Central
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'
+  release:
+    types: [published]
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    # TODO: Nico — add a tag protection ruleset in repo Settings → Rules → New ruleset, targeting
+    # tags matching v*.*.*, restricted to main, so tags cannot be created from other branches.
+    if: github.event.release.target_commitish == 'main'
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,3 +46,20 @@ jobs:
             -DskipTests \
             -Pgpg-sign \
             --settings .github/maven-settings.xml
+
+      # TODO: Nico — for this step to work, github-actions[bot] must be allowed to push directly to
+      # main without a PR. In repo Settings → Branches → main protection rule, enable
+      # "Allow specified actors to bypass required pull requests" and add github-actions[bot].
+      - name: Bump to next SNAPSHOT
+        run: |
+          TAG_VERSION=${GITHUB_REF_NAME#v}
+          MAJOR=$(echo "$TAG_VERSION" | cut -d. -f1)
+          MINOR=$(echo "$TAG_VERSION" | cut -d. -f2)
+          NEXT_SNAPSHOT="${MAJOR}.$((MINOR + 1)).0-SNAPSHOT"
+          cd matsim-aws-setup
+          mvn versions:set -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pom.xml
+          git commit -m "chore: bump version to $NEXT_SNAPSHOT"
+          git push origin main

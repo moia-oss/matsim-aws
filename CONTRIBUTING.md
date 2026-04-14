@@ -2,10 +2,10 @@
 
 ## Releasing
 
-Releases are published to Maven Central automatically when a version tag is pushed. The version format is `YYYY.minor.patch`:
-- **Major** (`YYYY`): the current year.
-- **Minor**: incremented for each regular release; reset to `1` at the start of a new year.
-- **Patch**: incremented for bug-fix-only releases; reset to `0` on minor bumps.
+Releases are published to Maven Central automatically when a GitHub Release is published from `main`. The version format is `major.minor.patch`:
+- **Major**: incremented for breaking changes.
+- **Minor**: incremented for each regular release.
+- **Patch**: incremented for bug-fix-only releases.
 
 ### Prerequisites
 
@@ -16,27 +16,15 @@ The following secrets must be configured in the `moia-oss/matsim-aws` repository
 
 ### Steps
 
-1. **Bump the POM version** to the release version:
+1. **Bump the POM version** to the release version on `main`:
    ```bash
    cd matsim-aws-setup
-   mvn versions:set -DnewVersion=2026.1.0 -DgenerateBackupPoms=false
+   mvn versions:set -DnewVersion=1.1.0 -DgenerateBackupPoms=false
    git add pom.xml
-   git commit -m "release: bump version to 2026.1.0"
+   git commit -m "release: bump version to 1.1.0"
    git push
    ```
 
-2. **Tag the release commit** and push the tag:
-   ```bash
-   git tag v2026.1.0
-   git push origin v2026.1.0
-   ```
-   Pushing the tag triggers the GitHub Actions release workflow, which validates that the tag matches the POM version, signs the artifacts, and publishes them to Maven Central.
+2. **Publish a GitHub Release**: go to the repository → Releases → "Draft a new release" → set the tag to `v1.1.0` targeted at `main` → write release notes → click **Publish release**.
 
-3. **Bump back to the next SNAPSHOT** after the release is confirmed on Maven Central:
-   ```bash
-   cd matsim-aws-setup
-   mvn versions:set -DnewVersion=2026.2.0-SNAPSHOT -DgenerateBackupPoms=false
-   git add pom.xml
-   git commit -m "chore: bump version to 2026.2.0-SNAPSHOT"
-   git push
-   ```
+   This triggers the release workflow, which validates that the tag matches the POM version, signs the artifacts, publishes them to Maven Central, and then automatically bumps the POM to `1.2.0-SNAPSHOT` and pushes the commit directly to `main`.
