@@ -25,4 +25,4 @@ The following secrets must be configured in the `moia-oss/matsim-aws` repository
 
 2. **Publish a GitHub Release**: go to the repository → Releases → "Draft a new release" → set the tag to `v1.1.0` targeted at `main` → write release notes → click **Publish release**.
 
-   This triggers the release workflow, which validates that the tag matches the POM version, signs the artifacts, publishes them to Maven Central, and then automatically bumps the POM to `1.2.0-SNAPSHOT` and pushes the commit directly to `main`.
+   This triggers the release workflow, which validates that the tag matches the POM version, signs the artifacts, and publishes them to Maven Central
