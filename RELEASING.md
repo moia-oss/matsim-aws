@@ -1,6 +1,4 @@
-# Contributing
-
-## Releasing
+# Releasing
 
 Releases are published to Maven Central automatically when a GitHub Release is published from `main`. The version format is `major.minor.patch`:
 - **Major**: incremented for breaking changes.
