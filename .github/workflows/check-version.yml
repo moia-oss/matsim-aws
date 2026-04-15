@@ -1,0 +1,27 @@
+name: Check version is not already released
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check POM version is not already released
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          POM_VERSION=$(grep -m1 '<version>' matsim-aws-setup/pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+          if [[ "$POM_VERSION" == *-SNAPSHOT ]]; then
+            echo "SNAPSHOT version $POM_VERSION — skipping release check"
+            exit 0
+          fi
+          if gh release view "v$POM_VERSION" &>/dev/null; then
+            echo "ERROR: release v$POM_VERSION already exists — bump the version before merging"
+            exit 1
+          fi
+          echo "OK: v$POM_VERSION has not been released yet"

@@ -10,8 +10,6 @@ jobs:
     # TODO: Nico — add a tag protection ruleset in repo Settings → Rules → New ruleset, targeting
     # tags matching v*.*.*, restricted to main, so tags cannot be created from other branches.
     if: github.event.release.target_commitish == 'main'
-    permissions:
-      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
