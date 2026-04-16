@@ -36,7 +36,7 @@ public class Run {
 
         new IAMStack(app, "IAMStack", stackProps, inputBucket, outputBucket, PolicyStatementParser.parse(IAM_POLICY_CSV));
         new ECRStack(app, "ECRStack", stackProps);
-        new BatchStack(app, "BatchStack", stackProps, vpcStack.getVpc());
+        new BatchStack(app, "BatchStack", stackProps, vpcStack.getImportableVpc());
         if(DEPLOY_SLACK_LAMBDA) {
             new JobNotificationStack(app, "JobNotificationStack", stackProps, SLACK_HOOK_URL, SLACK_CHANNEL_NAME);
         }

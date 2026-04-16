@@ -22,7 +22,7 @@ public class BatchStack extends Stack {
 
     public static final String MATSIM_JOB_QUEUE_ON_DEMAND = "MATSimJobQueueOnDemand";
 
-    public BatchStack(Construct scope, final String name, StackProps stackProps, Vpc vpc) {
+    public BatchStack(Construct scope, final String name, StackProps stackProps, IVpc vpc) {
         super(scope, name, stackProps);
         new BatchConstruct(this, name, vpc);
     }
