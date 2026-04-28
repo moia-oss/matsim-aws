@@ -8,14 +8,7 @@ import software.amazon.awscdk.services.s3.IBucket;
 
 public class Run {
 
-    private static final Environment ENV = makeEnv(requireEnv("AWS_ACCOUNT"), requireEnv("REGION"));
-
-    private static final String IAM_POLICY_CSV = System.getenv("IAM_POLICY_CSV");
-    private static final boolean DEPLOY_SLACK_LAMBDA = Boolean.parseBoolean(System.getenv("DEPLOY_SLACK_LAMBDA"));
-    private static final String SLACK_HOOK_URL = System.getenv("SLACK_HOOK_URL");
-    private static final String SLACK_CHANNEL_NAME = System.getenv("SLACK_CHANNEL_NAME");
-
-    private static String requireEnv(String name) {
+    static String requireEnv(String name) {
         String value = System.getenv(name);
         if (value == null || value.isBlank()) {
             throw new IllegalStateException("Required environment variable not set: " + name);
@@ -23,7 +16,6 @@ public class Run {
         return value;
     }
 
-    // Helper method to build an environment
     static Environment makeEnv(String account, String region) {
         return Environment.builder()
                 .account(account)
@@ -31,24 +23,38 @@ public class Run {
                 .build();
     }
 
-    public static void main(final String[] args) {
-
+    static App buildApp(String account, String region, String iamPolicyCsv, boolean deploySlackLambda,
+                        String slackHookUrl, String slackChannelName) {
         App app = new App();
+        StackProps stackProps = StackProps.builder().env(makeEnv(account, region)).build();
 
-        StackProps stackProps = StackProps.builder().env(ENV).build();
         VPCStack vpcStack = new VPCStack(app, "VpcStack", stackProps);
         S3Stack s3Stack = new S3Stack(app, "S3Stack", stackProps);
 
         IBucket inputBucket = s3Stack.getInputBucket();
         IBucket outputBucket = s3Stack.getOutputBucket();
 
-        new IAMStack(app, "IAMStack", stackProps, inputBucket, outputBucket, PolicyStatementParser.parse(IAM_POLICY_CSV));
+        new IAMStack(app, "IAMStack", stackProps, inputBucket, outputBucket, PolicyStatementParser.parse(iamPolicyCsv));
         new ECRStack(app, "ECRStack", stackProps);
-        new BatchStack(app, "BatchStack", stackProps, vpcStack.getImportableVpc());
-        if(DEPLOY_SLACK_LAMBDA) {
-            new JobNotificationStack(app, "JobNotificationStack", stackProps, SLACK_HOOK_URL, SLACK_CHANNEL_NAME);
+        BatchStack batchStack = new BatchStack(app, "BatchStack", stackProps, vpcStack.getImportableVpc());
+        // Fn.importValue() tokens are opaque to CDK's dependency graph, so we declare
+        // the dependency explicitly to ensure VpcStack is fully deployed before BatchStack.
+        batchStack.addDependency(vpcStack);
+        if (deploySlackLambda) {
+            new JobNotificationStack(app, "JobNotificationStack", stackProps, slackHookUrl, slackChannelName);
         }
-        app.synth();
+        return app;
+    }
 
+    public static void main(final String[] args) {
+        App app = buildApp(
+                requireEnv("AWS_ACCOUNT"),
+                requireEnv("REGION"),
+                System.getenv("IAM_POLICY_CSV"),
+                Boolean.parseBoolean(System.getenv("DEPLOY_SLACK_LAMBDA")),
+                System.getenv("SLACK_HOOK_URL"),
+                System.getenv("SLACK_CHANNEL_NAME")
+        );
+        app.synth();
     }
 }
