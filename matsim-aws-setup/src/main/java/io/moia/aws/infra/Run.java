@@ -8,12 +8,20 @@ import software.amazon.awscdk.services.s3.IBucket;
 
 public class Run {
 
-    private static final Environment ENV = makeEnv(System.getenv("AWS_ACCOUNT"), System.getenv("REGION"));
+    private static final Environment ENV = makeEnv(requireEnv("AWS_ACCOUNT"), requireEnv("REGION"));
 
     private static final String IAM_POLICY_CSV = System.getenv("IAM_POLICY_CSV");
     private static final boolean DEPLOY_SLACK_LAMBDA = Boolean.parseBoolean(System.getenv("DEPLOY_SLACK_LAMBDA"));
     private static final String SLACK_HOOK_URL = System.getenv("SLACK_HOOK_URL");
     private static final String SLACK_CHANNEL_NAME = System.getenv("SLACK_CHANNEL_NAME");
+
+    private static String requireEnv(String name) {
+        String value = System.getenv(name);
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException("Required environment variable not set: " + name);
+        }
+        return value;
+    }
 
     // Helper method to build an environment
     static Environment makeEnv(String account, String region) {
