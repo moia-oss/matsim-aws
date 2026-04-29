@@ -22,11 +22,11 @@ public class VPCStack extends Stack {
 
     // Stable export name patterns for private subnet IDs and AZs.
     // Index matches the order returned by Vpc.getPrivateSubnets().
-    private static String exportPrivateSubnetId(int index) {
+    public static String exportPrivateSubnetId(int index) {
         return "matsim-private-subnet-id-" + index;
     }
 
-    private static String exportPrivateSubnetAz(int index) {
+    public static String exportPrivateSubnetAz(int index) {
         return "matsim-private-subnet-az-" + index;
     }
 
