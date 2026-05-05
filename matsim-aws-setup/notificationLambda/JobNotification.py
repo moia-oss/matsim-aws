@@ -38,6 +38,8 @@ def handler(event, _):
     debug = [x for x in event["detail"]["container"]["environment"] if x["name"]=="DEBUG"]
 
     output_bucket = [x for x in event["detail"]["container"]["environment"] if x["name"]=="JOB_OUTPUT_BUCKET"]
+    if(len(output_bucket)==0):
+        output_bucket = os.environ["JOB_OUTPUT_BUCKET"]
 
     try:
         scenario = scenario[0]['value']
@@ -61,6 +63,8 @@ def handler(event, _):
     emoji = emoji_map[statusText]
 
 
+    status_reason = event["detail"].get("statusReason", "")
+
     slack_message = {
         "username": "MATSim Notifications",
         "as_user": False,
@@ -80,6 +84,15 @@ def handler(event, _):
             }
         ],
     }
+
+    if status_reason:
+        slack_message["attachments"].append(
+            {
+                "title": "Reason",
+                "text": status_reason,
+                "color": color_map.get(event["detail"]["status"], "#c0c0c0"),
+            }
+        )
 
     if "arrayProperties" in event["detail"]:
         array_status_summary = event["detail"]["arrayProperties"]["statusSummary"]
