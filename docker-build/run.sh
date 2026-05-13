@@ -195,3 +195,5 @@ while [ "${MATSIM_DONE_SEMAPHORE}" -nt "${SYNC_SEMAPHORE}" ]; do
   echo "Waiting for until sync to S3 has completed. Checking every ${SLEEP_FOR} seconds..."
   sleep ${SLEEP_FOR}
 done
+
+exit $RET
