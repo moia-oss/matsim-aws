@@ -19,7 +19,7 @@ SEMAPHORE=$3
 SLEEP_FOR=$4
 
 while true; do
-  aws s3 sync --only-show-errors "${SOURCE}" "${TARGET}"
+  aws s3 sync --only-show-errors "${SOURCE}" "${TARGET}" || echo "WARNING: S3 sync failed, will retry in ${SLEEP_FOR}s"
   touch "${SEMAPHORE}"
   sleep "${SLEEP_FOR}"
 done
