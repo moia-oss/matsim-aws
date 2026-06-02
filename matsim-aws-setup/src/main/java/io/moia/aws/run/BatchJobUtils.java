@@ -149,7 +149,7 @@ public class BatchJobUtils {
         private String jobQueue = BatchStack.MATSIM_JOB_QUEUE_ON_DEMAND;
 
         public JobSubmission memory(int memory) {
-            return memory(memory, (int) (memory * 0.95));
+            return memory(memory, (int) (memory * 0.9));
         }
 
         public JobSubmission memory(int memory, int jvmMemory) {
