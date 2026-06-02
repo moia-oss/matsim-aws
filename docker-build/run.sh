@@ -123,10 +123,17 @@ echo "$@" > "${OUTPUT_DIR}/matsim_parameters.txt"
 aws s3 sync --only-show-errors "${OUTPUT_DIR}" "${SYNC_PATH}"
 
 
+: ${ACTIVE_PROCESSORS:=}
+PROCESSOR_FLAG=""
+if [ -n "${ACTIVE_PROCESSORS}" ]; then
+    PROCESSOR_FLAG="-XX:ActiveProcessorCount=${ACTIVE_PROCESSORS}"
+    echo "Limiting active processors to: ${ACTIVE_PROCESSORS}"
+fi
+
 set +e
 if [ -z ${AWS_BATCH_JOB_ARRAY_INDEX+x} ]; then
     echo "Single batch job"
-    java -XX:+UseParallelGC \
+    java -XX:+UseParallelGC ${PROCESSOR_FLAG} \
       -XshowSettings:vm -XX:MinRAMPercentage=15 -Xmx${XMX} \
       -cp "${JAR_CP}" \
       -Djava.io.tmpdir="${MATSIM_TMPDIR}" \
@@ -135,7 +142,7 @@ if [ -z ${AWS_BATCH_JOB_ARRAY_INDEX+x} ]; then
       "$@"
 else
     echo "Batch Array job"
-    java -XX:+UseParallelGC \
+    java -XX:+UseParallelGC ${PROCESSOR_FLAG} \
       -XshowSettings:vm -XX:MinRAMPercentage=15 -Xmx${XMX} \
       -cp ${JAR_NAME} \
       -Djava.io.tmpdir="${MATSIM_TMPDIR}" \
