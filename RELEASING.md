@@ -5,6 +5,8 @@ Releases are published to Maven Central automatically when a GitHub Release is p
 - **Minor**: incremented for each regular release.
 - **Patch**: incremented for bug-fix-only releases.
 
+Only `matsim-aws-setup/pom.xml` is deployed to Maven Central. The `examples/equil` project is a local example project and owns the MATSim dependency so the released setup artifact does not publish MATSim as a dependency.
+
 ### Prerequisites
 
 The following secrets must be configured in the `moia-oss/matsim-aws` repository settings:
