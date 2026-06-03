@@ -6,14 +6,14 @@
 
     <groupId>io.moia</groupId>
     <artifactId>matsim-aws-example-equil</artifactId>
-    <version>1.0.7</version>
+    <version>1.0.8</version>
 
     <name>matsim-aws-example-equil</name>
     <description>Equil MATSim example for the matsim-aws AWS Batch runner</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <matsim-aws-setup.version>1.0.7</matsim-aws-setup.version>
+        <matsim-aws-setup.version>1.0.8</matsim-aws-setup.version>
         <matsim.version>2026.0-2025w20</matsim.version>
     </properties>
 
