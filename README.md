@@ -23,6 +23,8 @@ and channel
 - AWS cli installed for pushing the docker image to ECR
 - a packaged executable jar (i.e., shaded via maven)
 
+The published `matsim-aws-setup` Maven artifact contains only AWS infrastructure and Batch submission utilities. MATSim itself is used by the Equil example project under `examples/equil`.
+
 # Steps
 
 ## Setup Environment
@@ -58,31 +60,46 @@ the ECR repository has been setup.
 
 ## Run Example
 
-The `scenarios` folder contains the `equil` example scenario from MATSim original repo.
-Within the `matsim-aws-setup` module, there is the `io.moia.aws.run` package that shows
-how to get your first simulation running.
+The `scenarios` folder contains the `equil` example scenario from the MATSim original repository.
+The runnable MATSim example lives in the separate Maven project `examples/equil`; the AWS setup library remains in `matsim-aws-setup`.
 
-First, (with correct AWS credentials and the environment.env variables in your environment) 
-run the `PrepareInput` class, which simply uploads the required scenario files to your newly
-created S3 input bucket.
+First, with correct AWS credentials and the `environment.env` variables in your environment, build the example jar:
 
-Next, you need to package the maven module into an executable jar, such that it contains the `RunEquil`
-main class. You can use the `3_updateJar.sh` script provided here to run the package command and
-update the resulting jar into the correct input bucket path.
+```bash
+mvn -f pom.xml -pl examples/equil -am clean package -DskipTests=true
+```
 
-Once the input and jar are uploaded you need to define a AWS batch job definition. 
-The job definition acts like a template for defining how a job should be run.
-The definition defines various parameters, such as the batch job queue, the input/output buckets,
-Main class, etc. Run the `EquilExampleJobDefinition` (again with correct environment variables)
-to register the definition in your account.
+Then upload the required scenario files to the input bucket:
 
-Now you can run the `EquilExampleJobSubmission`class to actually submit your job. A link to the
-AWS batch job will be printed to the console. The output will be synced to your output bucket.
+```bash
+java -cp examples/equil/target/equil.jar io.moia.aws.run.example.equil.PrepareInput
+```
+
+Upload the executable example jar to the `jars/equil.jar` key expected by the job definition:
+
+```bash
+./3_updateJar.sh
+```
+
+Register the AWS Batch job definition:
+
+```bash
+java -cp examples/equil/target/equil.jar io.moia.aws.run.example.equil.EquilExampleJobDefinition
+```
+
+Submit the example job:
+
+```bash
+java -cp examples/equil/target/equil.jar io.moia.aws.run.example.equil.EquilExampleJobSubmission
+```
+
+A link to the AWS Batch job is printed to the console. The output is synced to the configured output bucket.
 
 
 # Useful commands
 
-* `mvn package`     compile and run tests
+* `mvn -f matsim-aws-setup/pom.xml test`     compile and test the AWS setup artifact
+* `mvn -f pom.xml -pl examples/equil -am package -DskipTests=true`     build the Equil example jar
 * `cdk ls`          list all stacks in the app
 * `cdk synth`       emits the synthesized CloudFormation template
 * `cdk deploy`      deploy this stack to your default AWS account/region
