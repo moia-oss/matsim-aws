@@ -53,7 +53,7 @@ public class BatchStack extends Stack {
                     .vpc(vpc)
                     .useOptimalInstanceClasses(false)
                     .launchTemplate(matsimLaunchTemplate)
-                    .instanceClasses(List.of(InstanceClass.M8G, InstanceClass.M7G, InstanceClass.R7G))
+                    .instanceClasses(List.of(InstanceClass.M8G, InstanceClass.M7G, InstanceClass.R7G, InstanceClass.R8G))
                     .images(List.of(
                             EcsMachineImage.builder()
                                     .image(EcsOptimizedImage.amazonLinux2023(AmiHardwareType.ARM))
@@ -61,7 +61,7 @@ public class BatchStack extends Stack {
                                     .build()
                     ))
                     .allocationStrategy(AllocationStrategy.BEST_FIT_PROGRESSIVE)
-                    .maxvCpus(512)
+                    .maxvCpus(2048)
                     .minvCpus(0).build();
 
             ManagedEc2EcsComputeEnvironment computeEnvironment = new ManagedEc2EcsComputeEnvironment(this,
