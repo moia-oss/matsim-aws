@@ -6,7 +6,7 @@
 
     <groupId>io.moia</groupId>
     <artifactId>matsim-aws-setup</artifactId>
-    <version>1.0.8</version>
+    <version>1.0.9</version>
 
 
     <name>matsim-aws-setup</name>
