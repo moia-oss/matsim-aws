@@ -191,8 +191,7 @@ public class BatchJobUtils {
          * your organisation uses another key for cost allocation (e.g. {@code Owner}), set it with {@link #tag}.
          */
         public JobSubmission owner(String owner) {
-            tags.put("OWNER", owner);
-            return this;
+            return tag("OWNER", owner);
         }
 
         /**

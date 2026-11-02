@@ -3,6 +3,7 @@ package io.moia.aws.infra;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Tags that are added to AWS resources, e.g. for cost allocation.
@@ -11,6 +12,14 @@ import java.util.Map;
  * the key has to be activated as a cost allocation tag in the management (payer) account.
  */
 public final class ResourceTags {
+
+    /**
+     * Characters AWS allows in tag keys and values: letters, digits, spaces and {@code _ . : / = + - @}.
+     */
+    private static final Pattern ALLOWED = Pattern.compile("[\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*");
+
+    private static final int MAX_KEY_LENGTH = 128;
+    private static final int MAX_VALUE_LENGTH = 256;
 
     private ResourceTags() {}
 
@@ -44,8 +53,9 @@ public final class ResourceTags {
     }
 
     /**
-     * Checks a single tag against the AWS tag restrictions (key 1-128 characters, value up to 256 characters,
-     * no reserved {@code aws:} prefix).
+     * Checks a single tag against the AWS tag restrictions: key 1-128 characters, value up to 256 characters
+     * (counted as Unicode characters), only letters, digits, spaces and {@code _ . : / = + - @}, no reserved
+     * {@code aws:} prefix. This way an invalid tag fails here rather than at deploy or submission time.
      *
      * @throws IllegalArgumentException if the tag is invalid
      */
@@ -53,8 +63,13 @@ public final class ResourceTags {
         if (key == null || key.isBlank()) {
             throw new IllegalArgumentException("Tag key must not be empty");
         }
-        if (key.length() > 128) {
-            throw new IllegalArgumentException("Tag key must not be longer than 128 characters: '" + key + "'");
+        if (characters(key) > MAX_KEY_LENGTH) {
+            throw new IllegalArgumentException(
+                    "Tag key must not be longer than " + MAX_KEY_LENGTH + " characters: '" + key + "'");
+        }
+        if (!ALLOWED.matcher(key).matches()) {
+            throw new IllegalArgumentException("Tag key contains characters not allowed by AWS (letters, digits, "
+                    + "spaces and _ . : / = + - @ only): '" + key + "'");
         }
         if (key.toLowerCase().startsWith("aws:")) {
             throw new IllegalArgumentException("Tag keys starting with 'aws:' are reserved: '" + key + "'");
@@ -62,8 +77,20 @@ public final class ResourceTags {
         if (value == null) {
             throw new IllegalArgumentException("Tag value must not be null for key '" + key + "'");
         }
-        if (value.length() > 256) {
-            throw new IllegalArgumentException("Tag value must not be longer than 256 characters for key '" + key + "'");
+        if (characters(value) > MAX_VALUE_LENGTH) {
+            throw new IllegalArgumentException("Tag value must not be longer than " + MAX_VALUE_LENGTH
+                    + " characters for key '" + key + "'");
         }
+        if (!ALLOWED.matcher(value).matches()) {
+            throw new IllegalArgumentException("Tag value for key '" + key + "' contains characters not allowed by "
+                    + "AWS (letters, digits, spaces and _ . : / = + - @ only): '" + value + "'");
+        }
+    }
+
+    /**
+     * AWS counts Unicode characters, not UTF-16 code units.
+     */
+    private static int characters(String s) {
+        return s.codePointCount(0, s.length());
     }
 }

@@ -39,6 +39,14 @@ class BatchJobUtilsTest {
     void jobSubmission_rejectsInvalidTags() {
         assertThrows(IllegalArgumentException.class, () -> submission().tag("aws:reserved", "x"));
         assertThrows(IllegalArgumentException.class, () -> submission().tag("", "x"));
+        assertThrows(IllegalArgumentException.class, () -> submission().tag("Component", "a#b"));
+    }
+
+    @Test
+    void jobSubmission_ownerIsValidatedLikeOtherTags() {
+        assertEquals(Map.of("OWNER", "someone"), submission().owner("someone").buildRequest().tags());
+        assertThrows(IllegalArgumentException.class, () -> submission().owner("some;one"));
+        assertThrows(IllegalArgumentException.class, () -> submission().owner(null));
     }
 
     @Test

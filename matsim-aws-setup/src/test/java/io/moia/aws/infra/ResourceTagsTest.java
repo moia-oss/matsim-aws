@@ -50,4 +50,29 @@ class ResourceTagsTest {
         assertThrows(IllegalArgumentException.class, () -> ResourceTags.parse("k".repeat(129) + "=v"));
         assertThrows(IllegalArgumentException.class, () -> ResourceTags.parse("Owner=" + "v".repeat(257)));
     }
+
+    @Test
+    void validate_allowsTheAwsCharacterSet() {
+        assertDoesNotThrow(() -> ResourceTags.validate("Owner", "Mobility Consulting"));
+        assertDoesNotThrow(() -> ResourceTags.validate("team:project/sub-part_1.2", "a+b=c@d"));
+        assertDoesNotThrow(() -> ResourceTags.validate("Straße", "Zürich 2026"));
+    }
+
+    @Test
+    void validate_rejectsCharactersOutsideTheAwsCharacterSet() {
+        for (String invalid : List.of("Owner#1", "a;b", "a*b", "a\"b", "a\tb", "a\uD83D\uDE00")) {
+            assertThrows(IllegalArgumentException.class, () -> ResourceTags.validate(invalid, "value"), invalid);
+            assertThrows(IllegalArgumentException.class, () -> ResourceTags.validate("key", invalid), invalid);
+        }
+        assertThrows(IllegalArgumentException.class, () -> ResourceTags.parse("Owner=my#team"));
+    }
+
+    @Test
+    void validate_countsCharactersNotUtf16Units() {
+        // U+1D538 (mathematical double-struck A) is a letter outside the BMP: one character, two UTF-16 units
+        String letter = new String(Character.toChars(0x1D538));
+        assertDoesNotThrow(() -> ResourceTags.validate(letter.repeat(128), letter.repeat(256)));
+        assertThrows(IllegalArgumentException.class, () -> ResourceTags.validate(letter.repeat(129), "v"));
+        assertThrows(IllegalArgumentException.class, () -> ResourceTags.validate("k", letter.repeat(257)));
+    }
 }
