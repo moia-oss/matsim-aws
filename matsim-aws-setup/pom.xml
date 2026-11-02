@@ -173,6 +173,10 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>sso</artifactId>
         </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>costexplorer</artifactId>
+        </dependency>
     </dependencies>
 
     <profiles>
