@@ -163,8 +163,11 @@ RESOURCE_TAGS="Owner=my-team,Service=matsim"
 ```
 
 The tags are added to all resources of all stacks, including the S3 buckets, the Batch compute environment, and the
-EC2 instances and EBS volumes that AWS Batch launches (via the launch template). Adding or changing tags on an existing
-deployment may replace the Batch compute environment, so deploy while no jobs are running.
+EC2 instances and EBS volumes that AWS Batch launches (via the launch template).
+
+Adding or changing tags on an existing deployment **replaces the Batch compute environment**: CloudFormation cannot
+update the tags of an `AWS::Batch::ComputeEnvironment` in place. All other resources are updated in place. Run
+`cdk diff` first and deploy while no jobs are running or queued. A new deployment is not affected.
 
 **Jobs.** Add tags per job with `JobSubmission.tag(key, value)` (and per job definition with `JobDefinition.tag`).
 Job tags are propagated to the job's ECS task. `JobSubmission.owner(...)` sets the tag key `OWNER`.
