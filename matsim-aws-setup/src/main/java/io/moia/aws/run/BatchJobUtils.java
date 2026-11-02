@@ -1,5 +1,6 @@
 package io.moia.aws.run;
 
+import io.moia.aws.infra.ResourceTags;
 import io.moia.aws.infra.stacks.BatchStack;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.batch.BatchClient;
@@ -37,6 +38,7 @@ public class BatchJobUtils {
         private String jobRoleARN;
 
         private final ContainerProperties.Builder containerProperties = ContainerProperties.builder();
+        private final Map<String, String> tags = new LinkedHashMap<>();
         private final Collection<KeyValuePair> environment = new HashSet<>();
         private final List<ResourceRequirement> resourceRequirements = new ArrayList<>();
 
@@ -101,22 +103,43 @@ public class BatchJobUtils {
             return this;
         }
 
-        public void submit() {
+        /**
+         * Adds a tag to the job definition. Tags of the job definition are propagated to the jobs' ECS tasks.
+         */
+        public JobDefinition tag(String key, String value) {
+            ResourceTags.validate(key, value);
+            tags.put(key, value);
+            return this;
+        }
 
+        public JobDefinition tags(Map<String, String> tags) {
+            tags.forEach(this::tag);
+            return this;
+        }
+
+        RegisterJobDefinitionRequest buildRequest() {
             containerProperties
                     .image(image)
                     .jobRoleArn(jobRoleARN)
                     .resourceRequirements(resourceRequirements)
                     .environment(environment);
 
-            BatchClient awsBatch = BatchClient.builder().region(region).build();
-
-            RegisterJobDefinitionRequest request = RegisterJobDefinitionRequest.builder()
+            RegisterJobDefinitionRequest.Builder builder = RegisterJobDefinitionRequest.builder()
                     .jobDefinitionName(jobDefinitionName)
                     .type("container")
                     .propagateTags(true)
                     .platformCapabilities(PlatformCapability.EC2)
-                    .containerProperties(containerProperties.build()).build();
+                    .containerProperties(containerProperties.build());
+            if (!tags.isEmpty()) {
+                builder.tags(tags);
+            }
+            return builder.build();
+        }
+
+        public void submit() {
+            RegisterJobDefinitionRequest request = buildRequest();
+
+            BatchClient awsBatch = BatchClient.builder().region(region).build();
 
             RegisterJobDefinitionResponse response = awsBatch.registerJobDefinition(request);
             System.out.println("Submitted job definition: " + response.jobDefinitionName()
@@ -163,8 +186,27 @@ public class BatchJobUtils {
             return this;
         }
 
+        /**
+         * Sets the {@code OWNER} tag of the job (kept for compatibility). Note that tag keys are case-sensitive: if
+         * your organisation uses another key for cost allocation (e.g. {@code Owner}), set it with {@link #tag}.
+         */
         public JobSubmission owner(String owner) {
             tags.put("OWNER", owner);
+            return this;
+        }
+
+        /**
+         * Adds a tag to the job. Job tags are propagated to the job's ECS task, so that they can be used for cost
+         * allocation with split cost allocation data for Amazon ECS.
+         */
+        public JobSubmission tag(String key, String value) {
+            ResourceTags.validate(key, value);
+            tags.put(key, value);
+            return this;
+        }
+
+        public JobSubmission tags(Map<String, String> tags) {
+            tags.forEach(this::tag);
             return this;
         }
 
@@ -251,7 +293,7 @@ public class BatchJobUtils {
             return this;
         }
 
-        public SubmitJobResponse submit() {
+        SubmitJobRequest buildRequest() {
 
             DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss");
             LocalDateTime now = LocalDateTime.now();
@@ -282,7 +324,11 @@ public class BatchJobUtils {
                 builder.arrayProperties(arrayProperties);
             }
 
-            SubmitJobRequest request = builder.build();
+            return builder.build();
+        }
+
+        public SubmitJobResponse submit() {
+            SubmitJobRequest request = buildRequest();
 
             BatchClient awsBatch = BatchClient.builder().region(region).build();
 
