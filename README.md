@@ -194,6 +194,8 @@ java -cp "target/classes:$(cat cp.txt)" io.moia.aws.cost.CostReport 2026-09-01 2
 ```
 
 Arguments: start date, end date (exclusive), optional tag key, optional output file (default: standard output).
+The CSV follows RFC 4180. Tag values starting with `=`, `+`, `-` or `@` are prefixed with `'`, so that spreadsheet
+programs show them as text instead of evaluating them as a formula.
 With a tag key, the report also prints per month the share of the cost that carries a value of the tag. A share of
 (almost) 0 % means that the tag key is not activated as a cost allocation tag in your organisation, or that the
 resources causing the costs are not tagged.

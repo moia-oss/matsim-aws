@@ -177,6 +177,11 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>costexplorer</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>1.14.1</version>
+        </dependency>
     </dependencies>
 
     <profiles>

@@ -1,5 +1,7 @@
 package io.moia.aws.cost;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.costexplorer.CostExplorerClient;
 import software.amazon.awssdk.services.costexplorer.model.DateInterval;
@@ -133,22 +135,38 @@ public final class CostReport {
         return shares;
     }
 
+    /**
+     * The CSV format of the report: RFC 4180 quoting and escaping, records separated by {@code \n}.
+     */
+    static final CSVFormat CSV_FORMAT = CSVFormat.RFC4180.builder().setRecordSeparator('\n').get();
+
     public static void writeCsv(List<Row> rows, Writer writer) throws IOException {
         boolean withTag = rows.stream().anyMatch(row -> row.tagValue() != null);
-        writer.write(withTag ? "month,account,tag_value,amount,unit\n" : "month,account,amount,unit\n");
-        for (Row row : rows) {
-            writer.write(row.month() + "," + row.account() + ","
-                    + (withTag ? csv(row.tagValue() == null ? "" : row.tagValue()) + "," : "")
-                    + row.amount().toPlainString() + "," + row.unit() + "\n");
+        // not closed: the writer belongs to the caller
+        CSVPrinter printer = new CSVPrinter(writer, CSV_FORMAT);
+        if (withTag) {
+            printer.printRecord("month", "account", "tag_value", "amount", "unit");
+        } else {
+            printer.printRecord("month", "account", "amount", "unit");
         }
+        for (Row row : rows) {
+            if (withTag) {
+                printer.printRecord(row.month(), row.account(),
+                        neutraliseFormula(row.tagValue() == null ? "" : row.tagValue()),
+                        row.amount().toPlainString(), row.unit());
+            } else {
+                printer.printRecord(row.month(), row.account(), row.amount().toPlainString(), row.unit());
+            }
+        }
+        printer.flush();
     }
 
     /**
-     * Quotes a field if it contains a comma, a quote or a line break (RFC 4180), so that each row stays one record.
+     * Prefixes values starting with = + - @ with an apostrophe, so that spreadsheet programs show them as text instead
+     * of evaluating them as a formula (CSV injection, see OWASP). AWS allows these characters in tag values.
      */
-    private static String csv(String value) {
-        boolean quote = value.chars().anyMatch(c -> c == ',' || c == '"' || c == '\n' || c == '\r');
-        return quote ? "\"" + value.replace("\"", "\"\"") + "\"" : value;
+    static String neutraliseFormula(String value) {
+        return !value.isEmpty() && "=+-@".indexOf(value.charAt(0)) >= 0 ? "'" + value : value;
     }
 
     public static void main(String[] args) throws IOException {

@@ -122,6 +122,27 @@ class CostReportTest {
                 + "2026-10,111,\"e\rf\",3,USD\n", csv.toString());
     }
 
+    /**
+     * AWS tag values may start with = + - @, which spreadsheet programs evaluate as a formula (CSV injection). Such
+     * values are prefixed with an apostrophe (OWASP recommendation), so they are shown as text.
+     */
+    @Test
+    void writeCsv_neutralisesFormulas() throws Exception {
+        StringWriter csv = new StringWriter();
+        CostReport.writeCsv(List.of(
+                new CostReport.Row("2026-10", "111", "=1+1", new BigDecimal("1"), "USD"),
+                new CostReport.Row("2026-10", "111", "+a", new BigDecimal("2"), "USD"),
+                new CostReport.Row("2026-10", "111", "-a", new BigDecimal("3"), "USD"),
+                new CostReport.Row("2026-10", "111", "@a", new BigDecimal("4"), "USD"),
+                new CostReport.Row("2026-10", "111", "a=b", new BigDecimal("5"), "USD")), csv);
+        assertEquals("month,account,tag_value,amount,unit\n"
+                + "2026-10,111,'=1+1,1,USD\n"
+                + "2026-10,111,'+a,2,USD\n"
+                + "2026-10,111,'-a,3,USD\n"
+                + "2026-10,111,'@a,4,USD\n"
+                + "2026-10,111,a=b,5,USD\n", csv.toString());
+    }
+
     @Test
     void tagValue_ofGroupKey() {
         assertEquals("team-a", CostReport.tagValue("Owner$team-a"));
