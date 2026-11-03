@@ -147,4 +147,34 @@ class RunTest {
         stackTemplate(buildTestApp(), "BatchStack").resourcePropertiesCountIs("AWS::Batch::ComputeEnvironment",
                 Map.of("ComputeResources", Map.of("Tags", Match.anyValue())), 0);
     }
+
+    /**
+     * The root volume of the Batch instances is gp3: about 20 % cheaper than gp2 at the same size, with a baseline of
+     * 3,000 IOPS and 125 MiB/s independent of the size.
+     */
+    @Test
+    void batchInstances_useGp3RootVolume() {
+        stackTemplate(buildTestApp(), "BatchStack").hasResourceProperties("AWS::EC2::LaunchTemplate",
+                Map.of("LaunchTemplateData", Map.of("BlockDeviceMappings", Match.arrayWith(List.of(Map.of(
+                        "DeviceName", "/dev/xvda",
+                        "Ebs", Match.objectLike(Map.of("VolumeSize", 512, "VolumeType", "gp3"))))))));
+    }
+
+    /**
+     * AWS Batch applies a new launch template version only during an infrastructure update of the compute environment;
+     * with $Default it keeps the version from the time the compute environment was created. The compute environment
+     * therefore refers to the latest version explicitly, so that a changed launch template (e.g. the volume type)
+     * reaches new instances of an existing deployment.
+     */
+    @Test
+    void batchComputeEnvironment_usesLatestLaunchTemplateVersion() {
+        Template template = stackTemplate(buildTestApp(), "BatchStack");
+        String launchTemplate = template.findResources("AWS::EC2::LaunchTemplate").keySet().iterator().next();
+
+        template.hasResourceProperties("AWS::Batch::ComputeEnvironment", Map.of(
+                "ReplaceComputeEnvironment", false,
+                "ComputeResources", Match.objectLike(Map.of("LaunchTemplate", Map.of(
+                        "LaunchTemplateId", Map.of("Ref", launchTemplate),
+                        "Version", Map.of("Fn::GetAtt", List.of(launchTemplate, "LatestVersionNumber")))))));
+    }
 }
