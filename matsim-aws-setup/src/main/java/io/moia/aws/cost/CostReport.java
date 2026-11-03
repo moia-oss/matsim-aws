@@ -169,6 +169,17 @@ public final class CostReport {
         return !value.isEmpty() && "=+-@".indexOf(value.charAt(0)) >= 0 ? "'" + value : value;
     }
 
+    /**
+     * Writes the report to a file in UTF-8 with a byte order mark, so that Excel detects the encoding (otherwise
+     * umlauts in tag values are garbled). The standard output is written without it.
+     */
+    public static void writeCsvFile(List<Row> rows, Path file) throws IOException {
+        try (Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+            writer.write('\uFEFF');
+            writeCsv(rows, writer);
+        }
+    }
+
     public static void main(String[] args) throws IOException {
         if (args.length < 2) {
             System.err.println("Usage: CostReport <start yyyy-MM-dd> <end yyyy-MM-dd, exclusive> [tag key] [output.csv]");
@@ -185,9 +196,7 @@ public final class CostReport {
         }
 
         if (args.length > 3) {
-            try (Writer writer = Files.newBufferedWriter(Path.of(args[3]), StandardCharsets.UTF_8)) {
-                writeCsv(rows, writer);
-            }
+            writeCsvFile(rows, Path.of(args[3]));
             System.out.println("Written " + rows.size() + " rows to " + args[3]);
         } else {
             Writer writer = new OutputStreamWriter(System.out, StandardCharsets.UTF_8);

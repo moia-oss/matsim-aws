@@ -1,6 +1,7 @@
 package io.moia.aws.cost;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import software.amazon.awssdk.services.costexplorer.model.DateInterval;
 import software.amazon.awssdk.services.costexplorer.model.GetCostAndUsageRequest;
 import software.amazon.awssdk.services.costexplorer.model.GetCostAndUsageResponse;
@@ -10,6 +11,9 @@ import software.amazon.awssdk.services.costexplorer.model.MetricValue;
 import software.amazon.awssdk.services.costexplorer.model.ResultByTime;
 
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -141,6 +145,21 @@ class CostReportTest {
                 + "2026-10,111,'-a,3,USD\n"
                 + "2026-10,111,'@a,4,USD\n"
                 + "2026-10,111,a=b,5,USD\n", csv.toString());
+    }
+
+    /**
+     * Excel only detects UTF-8 in a CSV file with a byte order mark; without it, umlauts in tag values are garbled.
+     */
+    @Test
+    void writeCsvFile_startsWithUtf8ByteOrderMark(@TempDir Path dir) throws Exception {
+        Path file = dir.resolve("costs.csv");
+        CostReport.writeCsvFile(List.of(new CostReport.Row("2026-10", "111", "Müller", new BigDecimal("1"), "USD")),
+                file);
+
+        byte[] bytes = Files.readAllBytes(file);
+        assertArrayEquals(new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF}, java.util.Arrays.copyOf(bytes, 3));
+        assertEquals("\uFEFFmonth,account,tag_value,amount,unit\n2026-10,111,Müller,1,USD\n",
+                new String(bytes, StandardCharsets.UTF_8));
     }
 
     @Test
