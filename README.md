@@ -192,6 +192,31 @@ Job tags are propagated to the job's ECS task. `JobSubmission.owner(...)` sets t
 
 Both settings are made in the billing console of the management account, not by this stack.
 
+## Cost Report
+
+`io.moia.aws.cost.CostReport` reads monthly costs per account from AWS Cost Explorer and writes them as CSV,
+optionally grouped by the values of one tag:
+
+```bash
+cd matsim-aws-setup
+mvn compile dependency:build-classpath -Dmdep.outputFile=cp.txt
+java -cp "target/classes:$(cat cp.txt)" io.moia.aws.cost.CostReport 2026-09-01 2026-11-01 Owner costs.csv
+```
+
+Arguments: start date, end date (exclusive), optional tag key, optional output file (default: standard output).
+The CSV follows RFC 4180. Tag values starting with `=`, `+`, `-` or `@` are prefixed with `'`, so that spreadsheet
+programs show them as text instead of evaluating them as a formula.
+An output file is written in UTF-8 with a byte order mark, so that Excel detects the encoding. When reading it with
+pandas, use `encoding="utf-8-sig"`.
+With a tag key, the report also prints per month the share of the cost that carries a value of the tag. A share of
+(almost) 0 % means that the tag key is not activated as a cost allocation tag in your organisation, or that the
+resources causing the costs are not tagged.
+
+Notes:
+- The credentials need `ce:GetCostAndUsage`. Each Cost Explorer API request is charged (currently USD 0.01).
+- Cost Explorer does not show split cost allocation data (EC2 costs attributed to individual ECS tasks / Batch jobs).
+  These are only reported in the Cost and Usage Report (Data Exports).
+
 # DISCLAIMER:
 The code is provided as is. There is no warranty about 
 the correct usage of AWS resources. Any costs incurring in
