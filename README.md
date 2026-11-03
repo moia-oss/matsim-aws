@@ -1,4 +1,6 @@
 # MATSim - AWS
+[![MvnRepository](https://badges.mvnrepository.com/badge/io.moia/matsim-aws-setup/badge.svg?label=MvnRepository)](https://mvnrepository.com/artifact/io.moia/matsim-aws-setup)
+
 AWS (amazon web services) setup for MATSim simulations.
 
 Provides generic infrastructure as code templates
