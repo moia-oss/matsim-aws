@@ -8,6 +8,7 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.assertions.Match;
 import software.amazon.awscdk.assertions.Template;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -96,5 +97,54 @@ class RunTest {
         boolean dependsOnVpc = batch.getDependencies().stream()
                 .anyMatch(dep -> dep.getStackName().equals(vpc.getStackName()));
         assertTrue(dependsOnVpc, "BatchStack must declare an explicit dependency on VpcStack");
+    }
+
+    // Resource tags (e.g. for cost allocation) must reach the resources that cause the costs: the EC2 instances
+    // and EBS volumes launched by AWS Batch, and the S3 buckets.
+
+    private static final Map<String, String> RESOURCE_TAGS = Map.of("Owner", "test-team", "Service", "matsim");
+
+    private static App buildTaggedTestApp() {
+        return Run.buildApp(TEST_ACCOUNT, TEST_REGION, null, false, null, null, RESOURCE_TAGS);
+    }
+
+    private static Template stackTemplate(App app, String stackName) {
+        return Template.fromStack((Stack) app.getNode().findChild(stackName));
+    }
+
+    @Test
+    void resourceTags_reachBatchInstancesAndVolumes() {
+        Template template = stackTemplate(buildTaggedTestApp(), "BatchStack");
+
+        for (String resourceType : List.of("instance", "volume")) {
+            template.hasResourceProperties("AWS::EC2::LaunchTemplate", Map.of("LaunchTemplateData",
+                    Map.of("TagSpecifications", Match.arrayWith(List.of(Map.of(
+                            "ResourceType", resourceType,
+                            "Tags", Match.arrayWith(List.of(
+                                    Map.of("Key", "Owner", "Value", "test-team"),
+                                    Map.of("Key", "Service", "Value", "matsim")))))))));
+        }
+        template.hasResourceProperties("AWS::Batch::ComputeEnvironment", Map.of("ComputeResources",
+                Map.of("Tags", Map.of("Owner", "test-team", "Service", "matsim"))));
+    }
+
+    @Test
+    void resourceTags_reachBuckets() {
+        Template template = stackTemplate(buildTaggedTestApp(), "S3Stack");
+        int buckets = template.findResources("AWS::S3::Bucket").size();
+
+        assertTrue(buckets > 0);
+        template.resourcePropertiesCountIs("AWS::S3::Bucket",
+                Map.of("Tags", Match.arrayWith(List.of(Map.of("Key", "Owner", "Value", "test-team")))), buckets);
+    }
+
+    @Test
+    void resourceTags_noTagsByDefault() {
+        Template template = stackTemplate(buildTestApp(), "S3Stack");
+
+        template.resourcePropertiesCountIs("AWS::S3::Bucket",
+                Map.of("Tags", Match.arrayWith(List.of(Map.of("Key", "Owner", "Value", Match.anyValue())))), 0);
+        stackTemplate(buildTestApp(), "BatchStack").resourcePropertiesCountIs("AWS::Batch::ComputeEnvironment",
+                Map.of("ComputeResources", Map.of("Tags", Match.anyValue())), 0);
     }
 }
