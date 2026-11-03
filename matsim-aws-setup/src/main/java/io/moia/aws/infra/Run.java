@@ -4,7 +4,10 @@ import io.moia.aws.infra.stacks.*;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.services.s3.IBucket;
+
+import java.util.Map;
 
 public class Run {
 
@@ -25,6 +28,15 @@ public class Run {
 
     static App buildApp(String account, String region, String iamPolicyCsv, boolean deploySlackLambda,
                         String slackHookUrl, String slackChannelName) {
+        return buildApp(account, region, iamPolicyCsv, deploySlackLambda, slackHookUrl, slackChannelName, Map.of());
+    }
+
+    /**
+     * @param resourceTags tags added to all resources of all stacks (including the EC2 instances and EBS volumes
+     *                     that AWS Batch launches), e.g. for cost allocation
+     */
+    static App buildApp(String account, String region, String iamPolicyCsv, boolean deploySlackLambda,
+                        String slackHookUrl, String slackChannelName, Map<String, String> resourceTags) {
         App app = new App();
         StackProps stackProps = StackProps.builder().env(makeEnv(account, region)).build();
 
@@ -43,6 +55,7 @@ public class Run {
         if (deploySlackLambda) {
             new JobNotificationStack(app, "JobNotificationStack", stackProps, slackHookUrl, slackChannelName);
         }
+        resourceTags.forEach((key, value) -> Tags.of(app).add(key, value));
         return app;
     }
 
@@ -53,7 +66,8 @@ public class Run {
                 System.getenv("IAM_POLICY_CSV"),
                 Boolean.parseBoolean(System.getenv("DEPLOY_SLACK_LAMBDA")),
                 System.getenv("SLACK_HOOK_URL"),
-                System.getenv("SLACK_CHANNEL_NAME")
+                System.getenv("SLACK_CHANNEL_NAME"),
+                ResourceTags.parse(System.getenv("RESOURCE_TAGS"))
         );
         app.synth();
     }

@@ -152,6 +152,36 @@ cdk deploy --context failedRunRetentionDays=14   # default: 7
 ```
 
 
+## Cost Allocation Tags
+
+To break down costs by team, project or scenario, you can tag the deployed resources and the submitted jobs.
+
+**Infrastructure.** Set `RESOURCE_TAGS` in `environment.env` before deploying, e.g.
+
+```
+RESOURCE_TAGS="Owner=my-team,Service=matsim"
+```
+
+The tags are added to all resources of all stacks, including the S3 buckets, the Batch compute environment, and the
+EC2 instances and EBS volumes that AWS Batch launches (via the launch template).
+
+Adding or changing tags on an existing deployment **replaces the Batch compute environment**: CloudFormation cannot
+update the tags of an `AWS::Batch::ComputeEnvironment` in place. All other resources are updated in place. Run
+`cdk diff` first and deploy while no jobs are running or queued. A new deployment is not affected.
+
+**Jobs.** Add tags per job with `JobSubmission.tag(key, value)` (and per job definition with `JobDefinition.tag`).
+Job tags are propagated to the job's ECS task. `JobSubmission.owner(...)` sets the tag key `OWNER`.
+
+**Billing.** Tags alone do not show up in cost reports. In your AWS organisation:
+
+- Each tag key has to be activated as a *cost allocation tag* in the management (payer) account. Activation is not
+  retroactive. Tag keys are case-sensitive, so use exactly the keys your organisation has activated.
+- To attribute EC2 costs to individual jobs via their tags, *split cost allocation data* for Amazon ECS has to be
+  enabled (Billing and Cost Management, Cost Management Preferences). The split costs are reported in the Cost and
+  Usage Report (Data Exports).
+
+Both settings are made in the billing console of the management account, not by this stack.
+
 # DISCLAIMER:
 The code is provided as is. There is no warranty about 
 the correct usage of AWS resources. Any costs incurring in
