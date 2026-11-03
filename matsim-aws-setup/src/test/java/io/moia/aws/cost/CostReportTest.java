@@ -106,6 +106,22 @@ class CostReportTest {
         assertEquals("month,account,amount,unit\n2026-10,111,2,USD\n", withoutTag.toString());
     }
 
+    /**
+     * Tag values may contain line breaks. Unquoted, they would split one row into several CSV records (RFC 4180).
+     */
+    @Test
+    void writeCsv_quotesLineBreaks() throws Exception {
+        StringWriter csv = new StringWriter();
+        CostReport.writeCsv(List.of(
+                new CostReport.Row("2026-10", "111", "a\nb", new BigDecimal("1"), "USD"),
+                new CostReport.Row("2026-10", "111", "c\r\nd", new BigDecimal("2"), "USD"),
+                new CostReport.Row("2026-10", "111", "e\rf", new BigDecimal("3"), "USD")), csv);
+        assertEquals("month,account,tag_value,amount,unit\n"
+                + "2026-10,111,\"a\nb\",1,USD\n"
+                + "2026-10,111,\"c\r\nd\",2,USD\n"
+                + "2026-10,111,\"e\rf\",3,USD\n", csv.toString());
+    }
+
     @Test
     void tagValue_ofGroupKey() {
         assertEquals("team-a", CostReport.tagValue("Owner$team-a"));

@@ -143,8 +143,12 @@ public final class CostReport {
         }
     }
 
+    /**
+     * Quotes a field if it contains a comma, a quote or a line break (RFC 4180), so that each row stays one record.
+     */
     private static String csv(String value) {
-        return value.contains(",") || value.contains("\"") ? "\"" + value.replace("\"", "\"\"") + "\"" : value;
+        boolean quote = value.chars().anyMatch(c -> c == ',' || c == '"' || c == '\n' || c == '\r');
+        return quote ? "\"" + value.replace("\"", "\"\"") + "\"" : value;
     }
 
     public static void main(String[] args) throws IOException {
