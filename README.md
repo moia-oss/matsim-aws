@@ -154,6 +154,14 @@ cdk deploy --context failedRunRetentionDays=14   # default: 7
 ```
 
 
+## Compute Instances
+
+AWS Batch launches Graviton instances (m7g, m8g, r7g, r8g) from the launch template `matsimLaunchTemplate`, each with
+a 512 GB gp3 root volume. The compute environment refers to the latest version of the launch template: AWS Batch only
+applies a new launch template version during an infrastructure update of the compute environment, so a changed launch
+template (e.g. the volume type) triggers such an update on the next deployment. Running jobs are not terminated (they
+get up to 30 minutes); run `cdk diff` first and preferably deploy while no jobs are running.
+
 ## Cost Allocation Tags
 
 To break down costs by team, project or scenario, you can tag the deployed resources and the submitted jobs.

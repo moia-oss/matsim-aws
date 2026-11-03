@@ -3,6 +3,7 @@ package io.moia.aws.infra.stacks;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.batch.AllocationStrategy;
+import software.amazon.awscdk.services.batch.CfnComputeEnvironment;
 import software.amazon.awscdk.services.batch.EcsMachineImage;
 import software.amazon.awscdk.services.batch.EcsMachineImageType;
 import software.amazon.awscdk.services.batch.JobQueue;
@@ -41,7 +42,7 @@ public class BatchStack extends Stack {
                                     BlockDevice.builder()
                                             .deviceName("/dev/xvda")
                                             .volume(BlockDeviceVolume.ebs(512,
-                                                    EbsDeviceOptions.builder().volumeType(EbsDeviceVolumeType.GP2).build()
+                                                    EbsDeviceOptions.builder().volumeType(EbsDeviceVolumeType.GP3).build()
                                             ))
                                             .build()
                             )
@@ -66,6 +67,12 @@ public class BatchStack extends Stack {
 
             ManagedEc2EcsComputeEnvironment computeEnvironment = new ManagedEc2EcsComputeEnvironment(this,
                     "MATSimComputeEnvironmentOnDemand", environmentProps);
+
+            // AWS Batch applies a new launch template version only during an infrastructure update of the compute
+            // environment; with the default ($Default) it keeps the version from the time the compute environment was
+            // created. Referring to the latest version makes a changed launch template trigger such an update.
+            ((CfnComputeEnvironment) computeEnvironment.getNode().getDefaultChild()).addPropertyOverride(
+                    "ComputeResources.LaunchTemplate.Version", matsimLaunchTemplate.getLatestVersionNumber());
 
             JobQueue matSimJobQueueOnDemand = JobQueue.Builder.create(this, MATSIM_JOB_QUEUE_ON_DEMAND)
                     .jobQueueName(MATSIM_JOB_QUEUE_ON_DEMAND) // <-- Explicit name here
