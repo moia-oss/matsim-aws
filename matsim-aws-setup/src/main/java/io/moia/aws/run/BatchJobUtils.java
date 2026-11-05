@@ -73,6 +73,22 @@ public class BatchJobUtils {
             return this;
         }
 
+        /**
+         * Comma-separated input paths. Relative paths are resolved against {@code JOB_INPUT_BUCKET}.
+         * Full {@code s3://} URIs are used as-is, enabling reads from any bucket (e.g. the output bucket).
+         * A trailing slash forces a directory sync; otherwise the container auto-detects file vs. prefix.
+         */
+        public JobDefinition inputPaths(String paths) {
+            environment.add(KeyValuePair.builder().name("INPUT_PATHS").value(paths).build());
+            return this;
+        }
+
+        /**
+         * Sets {@code SCENARIO}, which {@code run.sh} no longer reads: no input is downloaded.
+         *
+         * @deprecated use {@link #inputPaths(String)}, e.g. {@code inputPaths(scenario + "/")} to sync a directory.
+         */
+        @Deprecated
         public JobDefinition inputScenario(String scenario) {
             environment.add(KeyValuePair.builder().name("SCENARIO").value(scenario).build());
             return this;
@@ -241,6 +257,12 @@ public class BatchJobUtils {
             return outputScenario + "/" + jobName;
         }
 
+        /**
+         * Sets {@code SCENARIO}, which {@code run.sh} no longer reads: no input is downloaded.
+         *
+         * @deprecated use {@link #inputPaths(String)}, e.g. {@code inputPaths(scenario + "/")} to sync a directory.
+         */
+        @Deprecated
         public JobSubmission scenario(String scenario){
             this.environment.add(KeyValuePair.builder().name("SCENARIO").value(scenario).build());
             return this;
