@@ -23,7 +23,8 @@ public class EquilExampleJobDefinition {
 
     public static final String JOB_ROLE_ARN = "arn:aws:iam::" + account + ":role/MatsimBatchRole";
     public static final String JAR_NAME = "equil.jar";
-    public static final String SCENARIO = PrepareInput.SCENARIO;
+    /** Downloaded by run.sh; the trailing slash syncs the whole scenario directory to ./examples/equil/. */
+    public static final String INPUT_PATHS = PrepareInput.SCENARIO + "/";
     public static final String MAIN_CLASS = RunEquil.class.getCanonicalName();
 
     public static final String OUTPUT_SCENARIO = "examples/equil";
@@ -36,13 +37,7 @@ public class EquilExampleJobDefinition {
 
         ContainerProperties.Builder containerProperties = ContainerProperties.builder();
 
-        Collection<KeyValuePair> environment = new HashSet<>();
-        environment.add(KeyValuePair.builder().name("JAR_NAME").value(JAR_NAME).build());
-        environment.add(KeyValuePair.builder().name("SCENARIO").value(SCENARIO).build());
-        environment.add(KeyValuePair.builder().name("MAIN_CLASS").value(MAIN_CLASS).build());
-        environment.add(KeyValuePair.builder().name("OUTPUT_SCENARIO").value(OUTPUT_SCENARIO).build());
-        environment.add(KeyValuePair.builder().name("JOB_INPUT_BUCKET").value(INPUT_BUCKET).build());
-        environment.add(KeyValuePair.builder().name("JOB_OUTPUT_BUCKET").value(OUTPUT_BUCKET).build());
+        Collection<KeyValuePair> environment = environment();
 
         List<ResourceRequirement> resourceRequirements = new ArrayList<>();
 
@@ -65,5 +60,16 @@ public class EquilExampleJobDefinition {
         RegisterJobDefinitionResponse response = awsBatch.registerJobDefinition(request);
         System.out.println("Submitted job definition: " + response.jobDefinitionName()
                 + "\nARN: " + response.jobDefinitionArn() + "\nRevision: " + response.revision());
+    }
+
+    static Collection<KeyValuePair> environment() {
+        Collection<KeyValuePair> environment = new HashSet<>();
+        environment.add(KeyValuePair.builder().name("JAR_NAME").value(JAR_NAME).build());
+        environment.add(KeyValuePair.builder().name("INPUT_PATHS").value(INPUT_PATHS).build());
+        environment.add(KeyValuePair.builder().name("MAIN_CLASS").value(MAIN_CLASS).build());
+        environment.add(KeyValuePair.builder().name("OUTPUT_SCENARIO").value(OUTPUT_SCENARIO).build());
+        environment.add(KeyValuePair.builder().name("JOB_INPUT_BUCKET").value(INPUT_BUCKET).build());
+        environment.add(KeyValuePair.builder().name("JOB_OUTPUT_BUCKET").value(OUTPUT_BUCKET).build());
+        return environment;
     }
 }
