@@ -25,8 +25,8 @@ fi
 ARCH=$(uname -m | sed 's/x86_64/x86_64/;s/arm64/arm_64/')
 OS=$(uname -s | sed 's/Darwin/darwin/;s/Linux/linux/')
 
-MATSIM_TMPDIR=/tmp/matsim
-OUTPUT_DIR=/tmp/output
+MATSIM_TMPDIR=${MATSIM_TMPDIR:-/tmp/matsim}
+OUTPUT_DIR=${OUTPUT_DIR:-/tmp/output}
 SYNC_SEMAPHORE=/tmp/sync-semaphore
 MATSIM_DONE_SEMAPHORE=/tmp/matsim-done-semaphore
 echo "Xmx: ${XMX}"
@@ -144,7 +144,7 @@ else
     echo "Batch Array job"
     java -XX:+UseParallelGC ${PROCESSOR_FLAG} \
       -XshowSettings:vm -XX:MinRAMPercentage=15 -Xmx${XMX} \
-      -cp ${JAR_NAME} \
+      -cp "${JAR_CP}" \
       -Djava.io.tmpdir="${MATSIM_TMPDIR}" \
       -Djava.library.path=/usr/lib/${ARCH}-${OS}-gnu/jni \
       ${MAIN_CLASS} \
@@ -156,12 +156,19 @@ set -e
 
 if [ "${RET}" -eq 0 ]; then STATUS="success"; else STATUS="failed"; fi
 
-mkdir -p /tmp/output
+mkdir -p "${OUTPUT_DIR}"
+# All children of an array job share OUTPUT_SCENARIO/JOB_NAME: each child gets its own metadata file and only tags
+# the objects it wrote itself (see below).
+if [ -n "${AWS_BATCH_JOB_ARRAY_INDEX+x}" ]; then
+    METADATA_FILE="_run_metadata_${AWS_BATCH_JOB_ARRAY_INDEX}.json"
+else
+    METADATA_FILE="_run_metadata.json"
+fi
 EXTRA_FIELDS=""
 if [ -n "${RUN_METADATA_EXTRA:-}" ]; then
     EXTRA_FIELDS=", ${RUN_METADATA_EXTRA}"
 fi
-cat > /tmp/output/_run_metadata.json <<EOF
+cat > "${OUTPUT_DIR}/${METADATA_FILE}" <<EOF
 {
   "jobName": "${JOB_NAME}",
   "outputPath": "${OUTPUT_SCENARIO}/${JOB_NAME}",
@@ -176,18 +183,26 @@ aws s3 sync --only-show-errors "${OUTPUT_DIR}" "${SYNC_PATH}"
 # Sentinel tag on _run_metadata.json (immediate observability, one API call)
 aws s3api put-object-tagging \
     --bucket "${JOB_OUTPUT_BUCKET}" \
-    --key "${OUTPUT_SCENARIO}/${JOB_NAME}/_run_metadata.json" \
+    --key "${OUTPUT_SCENARIO}/${JOB_NAME}/${METADATA_FILE}" \
     --tagging "TagSet=[{Key=SimulationStatus,Value=${STATUS}}]"
 
-# Bulk-tag all output objects (for lifecycle rule storage cleanup, failed runs only)
+# Bulk-tag the output objects of a failed run (for lifecycle rule storage cleanup). A single job owns its prefix, so
+# all objects under it are tagged. An array child only tags the objects it wrote itself: the other children share the
+# prefix, and tagging their outputs would let the lifecycle rule delete successful runs.
+output_keys() {
+    if [ -n "${AWS_BATCH_JOB_ARRAY_INDEX+x}" ]; then
+        (cd "${OUTPUT_DIR}" && find . -type f | sed "s|^\./|${OUTPUT_SCENARIO}/${JOB_NAME}/|")
+    else
+        aws s3api list-objects-v2 \
+            --bucket "${JOB_OUTPUT_BUCKET}" \
+            --prefix "${OUTPUT_SCENARIO}/${JOB_NAME}/" \
+            --query "Contents[].Key" \
+            --output text \
+        | tr '\t' '\n'
+    fi
+}
 if [ "${STATUS}" = "failed" ]; then
-    aws s3api list-objects-v2 \
-        --bucket "${JOB_OUTPUT_BUCKET}" \
-        --prefix "${OUTPUT_SCENARIO}/${JOB_NAME}/" \
-        --query "Contents[].Key" \
-        --output text \
-    | tr '\t' '\n' \
-    | while read -r key; do
+    output_keys | while read -r key; do
         [[ -z "$key" ]] && continue
         aws s3api put-object-tagging \
             --bucket "${JOB_OUTPUT_BUCKET}" \
